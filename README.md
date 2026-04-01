@@ -14,6 +14,9 @@
 ## CLI commands
 
 ```bash
+# List all pluggable providers (local + online/planned)
+cargo run -p lyricwave-cli -- providers list
+
 # List devices and backend capability notes
 cargo run -p lyricwave-cli -- devices list
 
@@ -27,15 +30,18 @@ cargo run -p lyricwave-cli -- capture system --out out.flac --format flac --seco
 cargo run -p lyricwave-cli -- capture system --stdout --seconds 5 > out.pcm
 
 # Pipeline demo (mock ASR + mock translation)
-cargo run -p lyricwave-cli -- pipeline demo --text "hello from lyricwave" --target-lang zh
+cargo run -p lyricwave-cli -- pipeline demo --text "hello from lyricwave" --target-lang zh \
+  --asr-provider mock --translator-provider mock
 
 # Offline ASR via external VibeVoice repo (no vendoring in lyricwave)
-cargo run -p lyricwave-cli -- pipeline asr-file-vibevoice \
+cargo run -p lyricwave-cli -- pipeline asr-file \
   --audio ./sample.wav \
+  --asr-provider vibevoice \
   --vibevoice-dir /absolute/path/to/VibeVoice \
   --model-path microsoft/VibeVoice-ASR \
   --python-bin python \
-  --target-lang zh
+  --target-lang zh \
+  --translator-provider mock
 
 # Daemon JSON stream for overlay integration
 cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
