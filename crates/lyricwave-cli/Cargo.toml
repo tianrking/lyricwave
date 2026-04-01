@@ -1,0 +1,16 @@
+[package]
+name = "lyricwave-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "lyricwave"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+lyricwave-core = { path = "../lyricwave-core" }
