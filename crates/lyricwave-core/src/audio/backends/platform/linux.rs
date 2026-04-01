@@ -80,6 +80,7 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
     let module_id = load_null_sink(&capture_sink)?;
 
     let mut moved_back = false;
+    let started_at_ms = now_millis();
     let capture_result = (|| {
         move_sink_inputs_to_capture(&matched, &capture_sink)?;
         let run_result = run_parecord_for_request(request, &capture_sink);
@@ -92,6 +93,7 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
         let _ = move_sink_inputs_back(&matched, &default_sink);
     }
     let _ = unload_module(&module_id);
+    let ended_at_ms = now_millis();
 
     capture_result?;
 
@@ -108,6 +110,8 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
         captured_samples,
         sample_rate,
         channels,
+        started_at_ms,
+        ended_at_ms,
         selected_input_device: InputDeviceInfo {
             id: format!("pulse-monitor:{capture_sink}.monitor"),
             name: format!("{} monitor", capture_sink),

@@ -20,6 +20,15 @@ pub struct Cli {
         default_value = "platform-native"
     )]
     pub visual_backend: String,
+    /// Optional config file path (TOML).
+    #[arg(long, global = true)]
+    pub config: Option<PathBuf>,
+    /// Profile name inside config file.
+    #[arg(long, global = true, default_value = "default")]
+    pub profile: String,
+    /// Logging verbosity.
+    #[arg(long, global = true, value_enum, default_value_t = LogLevelArg::Info)]
+    pub log_level: LogLevelArg,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -422,6 +431,27 @@ pub enum RecordCommands {
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum FileFormatArg {
     Wav,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum LogLevelArg {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevelArg {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::Warn => "warn",
+            Self::Info => "info",
+            Self::Debug => "debug",
+            Self::Trace => "trace",
+        }
+    }
 }
 
 impl From<FileFormatArg> for CaptureFormat {

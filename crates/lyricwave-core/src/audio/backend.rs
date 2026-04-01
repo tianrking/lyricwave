@@ -115,6 +115,8 @@ pub struct CaptureReport {
     pub captured_samples: usize,
     pub sample_rate: u32,
     pub channels: u16,
+    pub started_at_ms: u64,
+    pub ended_at_ms: u64,
     pub selected_input_device: InputDeviceInfo,
     pub selection_reason: String,
     pub matched_processes: Vec<String>,

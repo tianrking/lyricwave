@@ -17,9 +17,36 @@ cargo build --workspace --release
 ```bash
 --audio-backend <ID>
 --visual-backend <ID>
+--config <FILE>
+--profile <NAME>
+--log-level <error|warn|info|debug|trace>
 ```
 
 当前默认后端为 `cpal-native`。
+
+### 2.1 配置文件（可选）
+
+默认路径：
+- macOS/Linux：`~/.config/lyricwave/config.toml`
+
+示例：
+
+```toml
+[default]
+sample_rate = 48000
+channels = 2
+fps = 30
+source_lang = "auto"
+target_lang = "zh"
+asr_provider = "vibevoice"
+translator_provider = "mock"
+python_bin = "python"
+model_path = "microsoft/VibeVoice-ASR"
+
+[profiles.meeting]
+target_lang = "en"
+fps = 24
+```
 
 ## 3. 四大功能导航
 

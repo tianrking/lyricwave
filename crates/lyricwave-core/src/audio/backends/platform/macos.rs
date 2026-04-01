@@ -151,9 +151,11 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
         }
     }
 
+    let started_at_ms = now_millis();
     let output = child
         .wait_with_output()
         .map_err(|e| AudioError::Message(format!("failed waiting helper output: {e}")))?;
+    let ended_at_ms = now_millis();
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(AudioError::Message(format!(
@@ -192,6 +194,8 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
         captured_samples,
         sample_rate,
         channels,
+        started_at_ms,
+        ended_at_ms,
         selected_input_device: InputDeviceInfo {
             id: "screencapturekit-app-audio".to_string(),
             name: "ScreenCaptureKit App Audio".to_string(),
@@ -260,4 +264,11 @@ fn ensure_helper_binary() -> Result<PathBuf, AudioError> {
 
 fn modified_time(path: &Path) -> Option<std::time::SystemTime> {
     std::fs::metadata(path).ok()?.modified().ok()
+}
+
+fn now_millis() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }

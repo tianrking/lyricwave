@@ -15,6 +15,13 @@ pub struct CompositionRequest {
 pub struct CompositionReport {
     pub audio: Option<CaptureReport>,
     pub visual: Option<VisualCaptureReport>,
+    pub sync: Option<AvSyncReport>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AvSyncReport {
+    pub start_diff_ms: i64,
+    pub end_diff_ms: i64,
 }
 
 #[derive(Debug, Error)]
@@ -79,9 +86,11 @@ impl<'a> CompositionCoordinator<'a> {
                         CompositionError::Thread("visual thread panicked".to_string())
                     })??;
 
+                    let sync = compute_sync(&audio, &visual);
                     Ok(CompositionReport {
                         audio: Some(audio),
                         visual: Some(visual),
+                        sync,
                     })
                 })
             }
@@ -92,6 +101,7 @@ impl<'a> CompositionCoordinator<'a> {
                 Ok(CompositionReport {
                     audio: Some(audio_backend.capture_blocking(&audio_req)?),
                     visual: None,
+                    sync: None,
                 })
             }
             (None, Some(visual_req)) => {
@@ -101,6 +111,7 @@ impl<'a> CompositionCoordinator<'a> {
                 Ok(CompositionReport {
                     audio: None,
                     visual: Some(visual_backend.capture_blocking(&visual_req)?),
+                    sync: None,
                 })
             }
             (None, None) => Err(CompositionError::InvalidRequest(
@@ -108,4 +119,13 @@ impl<'a> CompositionCoordinator<'a> {
             )),
         }
     }
+}
+
+fn compute_sync(audio: &CaptureReport, visual: &VisualCaptureReport) -> Option<AvSyncReport> {
+    let start_diff = audio.started_at_ms as i64 - visual.started_at_ms as i64;
+    let end_diff = audio.ended_at_ms as i64 - visual.ended_at_ms as i64;
+    Some(AvSyncReport {
+        start_diff_ms: start_diff,
+        end_diff_ms: end_diff,
+    })
 }

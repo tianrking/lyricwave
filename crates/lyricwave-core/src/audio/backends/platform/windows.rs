@@ -110,6 +110,7 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
     }
 
     let stop = Arc::new(AtomicBool::new(false));
+    let started_at_ms = now_millis();
     let mut worker_handles = Vec::new();
     let mut raw_paths = Vec::new();
 
@@ -155,11 +156,14 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
     for (_pid, raw) in &raw_paths {
         let _ = std::fs::remove_file(raw);
     }
+    let ended_at_ms = now_millis();
 
     Ok(CaptureReport {
         captured_samples: mixed.len(),
         sample_rate,
         channels,
+        started_at_ms,
+        ended_at_ms,
         selected_input_device: InputDeviceInfo {
             id: "wasapi-process-loopback".to_string(),
             name: "WASAPI Process Loopback".to_string(),

@@ -1,17 +1,39 @@
 mod cli;
 mod commands;
+mod config;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use log::{debug, info};
 use lyricwave_core::audio::build_audio_backend;
 
 use crate::cli::{
     BackendCommands, CaptureCommands, Cli, Commands, DaemonCommands, DeviceCommands,
     PipelineCommands, ProviderCommands, RecordCommands, VisualCommands,
 };
+use crate::config::ResolvedConfig;
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("{}", humanize_error(&err));
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
     let cli = Cli::parse();
+    init_logger(cli.log_level.as_str());
+    let cfg = ResolvedConfig::load(cli.config.as_deref(), &cli.profile)?;
+    if let Some(path) = &cfg.source_path {
+        info!(
+            "using profile '{}' from {}",
+            cfg.profile_name,
+            path.display()
+        );
+    } else {
+        info!("using built-in defaults (no config file)");
+    }
+    debug!("effective profile values: {:?}", cfg.values);
 
     match cli.command {
         Commands::Backends { command } => match command {
@@ -44,8 +66,8 @@ fn main() -> Result<()> {
                         out,
                         stdout,
                         seconds,
-                        sample_rate,
-                        channels,
+                        sample_rate.or(cfg.values.sample_rate),
+                        channels.or(cfg.values.channels),
                         format.into(),
                         input_device,
                         !no_prefer_loopback,
@@ -72,8 +94,8 @@ fn main() -> Result<()> {
                         backend.as_ref(),
                         out,
                         seconds,
-                        sample_rate,
-                        channels,
+                        sample_rate.or(cfg.values.sample_rate),
+                        channels.or(cfg.values.channels),
                         format.into(),
                         pid,
                         name,
@@ -104,8 +126,8 @@ fn main() -> Result<()> {
                         backend.as_ref(),
                         out_dir,
                         seconds,
-                        sample_rate,
-                        channels,
+                        sample_rate.or(cfg.values.sample_rate),
+                        channels.or(cfg.values.channels),
                         format.into(),
                         pid,
                         name,
@@ -124,10 +146,13 @@ fn main() -> Result<()> {
                 translator_provider,
             } => commands::pipeline::demo(
                 &text,
-                &source_lang,
-                &target_lang,
-                &asr_provider,
-                &translator_provider,
+                cfg.values.source_lang.as_deref().unwrap_or(&source_lang),
+                cfg.values.target_lang.as_deref().unwrap_or(&target_lang),
+                cfg.values.asr_provider.as_deref().unwrap_or(&asr_provider),
+                cfg.values
+                    .translator_provider
+                    .as_deref()
+                    .unwrap_or(&translator_provider),
             )?,
             PipelineCommands::AsrFile {
                 audio,
@@ -141,13 +166,16 @@ fn main() -> Result<()> {
                 no_translate,
             } => commands::pipeline::asr_file(
                 &audio,
-                &asr_provider,
-                vibevoice_dir.as_ref(),
-                &model_path,
-                &python_bin,
-                &source_lang,
-                &target_lang,
-                &translator_provider,
+                cfg.values.asr_provider.as_deref().unwrap_or(&asr_provider),
+                vibevoice_dir.as_ref().or(cfg.values.vibevoice_dir.as_ref()),
+                cfg.values.model_path.as_deref().unwrap_or(&model_path),
+                cfg.values.python_bin.as_deref().unwrap_or(&python_bin),
+                cfg.values.source_lang.as_deref().unwrap_or(&source_lang),
+                cfg.values.target_lang.as_deref().unwrap_or(&target_lang),
+                cfg.values
+                    .translator_provider
+                    .as_deref()
+                    .unwrap_or(&translator_provider),
                 no_translate,
             )?,
             PipelineCommands::RunOnce {
@@ -172,17 +200,20 @@ fn main() -> Result<()> {
                     seconds,
                     audio_out.as_ref(),
                     keep_temp_audio,
-                    &asr_provider,
-                    vibevoice_dir.as_ref(),
-                    &model_path,
-                    &python_bin,
-                    &source_lang,
-                    &target_lang,
-                    &translator_provider,
+                    cfg.values.asr_provider.as_deref().unwrap_or(&asr_provider),
+                    vibevoice_dir.as_ref().or(cfg.values.vibevoice_dir.as_ref()),
+                    cfg.values.model_path.as_deref().unwrap_or(&model_path),
+                    cfg.values.python_bin.as_deref().unwrap_or(&python_bin),
+                    cfg.values.source_lang.as_deref().unwrap_or(&source_lang),
+                    cfg.values.target_lang.as_deref().unwrap_or(&target_lang),
+                    cfg.values
+                        .translator_provider
+                        .as_deref()
+                        .unwrap_or(&translator_provider),
                     input_device,
                     !no_prefer_loopback,
-                    sample_rate,
-                    channels,
+                    sample_rate.or(cfg.values.sample_rate),
+                    channels.or(cfg.values.channels),
                 )?
             }
         },
@@ -224,7 +255,13 @@ fn main() -> Result<()> {
                 display,
             } => {
                 let backend = commands::visual::build_backend(&cli.visual_backend)?;
-                commands::visual::system(backend.as_ref(), out, seconds, fps, display)?;
+                commands::visual::system(
+                    backend.as_ref(),
+                    out,
+                    seconds,
+                    fps.or(cfg.values.fps),
+                    display,
+                )?;
             }
             VisualCommands::App {
                 out,
@@ -234,7 +271,14 @@ fn main() -> Result<()> {
                 name,
             } => {
                 let backend = commands::visual::build_backend(&cli.visual_backend)?;
-                commands::visual::app(backend.as_ref(), out, seconds, fps, pid, name)?;
+                commands::visual::app(
+                    backend.as_ref(),
+                    out,
+                    seconds,
+                    fps.or(cfg.values.fps),
+                    pid,
+                    name,
+                )?;
             }
             VisualCommands::AppsList => {
                 let backend = commands::visual::build_backend(&cli.visual_backend)?;
@@ -253,7 +297,7 @@ fn main() -> Result<()> {
                     backend.as_ref(),
                     out_dir,
                     seconds,
-                    fps,
+                    fps.or(cfg.values.fps),
                     pid,
                     name,
                     all_active,
@@ -277,11 +321,11 @@ fn main() -> Result<()> {
                 audio_out,
                 visual_out,
                 seconds,
-                sample_rate,
-                channels,
+                sample_rate.or(cfg.values.sample_rate),
+                channels.or(cfg.values.channels),
                 input_device,
                 no_prefer_loopback,
-                fps,
+                fps.or(cfg.values.fps),
                 display,
             )?,
             RecordCommands::App {
@@ -299,9 +343,9 @@ fn main() -> Result<()> {
                 audio_out,
                 visual_out,
                 seconds,
-                sample_rate,
-                channels,
-                fps,
+                sample_rate.or(cfg.values.sample_rate),
+                channels.or(cfg.values.channels),
+                fps.or(cfg.values.fps),
                 pid,
                 name,
             )?,
@@ -321,9 +365,9 @@ fn main() -> Result<()> {
                 &cli.visual_backend,
                 out_dir,
                 seconds,
-                sample_rate,
-                channels,
-                fps,
+                sample_rate.or(cfg.values.sample_rate),
+                channels.or(cfg.values.channels),
+                fps.or(cfg.values.fps),
                 pid,
                 name,
                 all_active,
@@ -334,6 +378,26 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn init_logger(level: &str) {
+    let env = env_logger::Env::default().default_filter_or(level);
+    let _ = env_logger::Builder::from_env(env).is_test(false).try_init();
+}
+
+fn humanize_error(err: &anyhow::Error) -> String {
+    let text = format!("{err:#}");
+    if text.contains("NotImplemented") || text.contains("feature not yet implemented") {
+        return format!(
+            "This feature is not implemented on your current backend/OS yet.\nDetails: {text}\nHint: try system-level capture first (capture/visual/record system)."
+        );
+    }
+    if text.contains("Screen Recording") || text.contains("SCStreamErrorDomain") {
+        return format!(
+            "Permission issue: please grant Screen Recording permission to your terminal/host app, then retry.\nDetails: {text}"
+        );
+    }
+    format!("Error: {text}")
 }
 
 fn build_backend(backend_id: &str) -> Result<Box<dyn lyricwave_core::audio::AudioBackend>> {

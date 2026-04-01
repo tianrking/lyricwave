@@ -85,6 +85,8 @@ pub struct VisualCaptureRequest {
 pub struct VisualCaptureReport {
     pub frames_captured: usize,
     pub fps: u32,
+    pub started_at_ms: u64,
+    pub ended_at_ms: u64,
     pub selected_display: DisplayInfo,
     pub output_path: PathBuf,
     pub backend_note: String,

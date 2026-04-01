@@ -121,11 +121,19 @@ pub fn run(
 
     if let Some(visual) = report.visual {
         eprintln!(
-            "visual done: {} frames @ {}fps, display='{}', out={}",
+            "visual done: {} frames @ {}fps, display='{}', out={}, t=[{}..{}]",
             visual.frames_captured,
             visual.fps,
             visual.selected_display.name,
-            visual.output_path.display()
+            visual.output_path.display(),
+            visual.started_at_ms,
+            visual.ended_at_ms
+        );
+    }
+    if let Some(sync) = report.sync {
+        eprintln!(
+            "sync: start_diff_ms={} end_diff_ms={} (audio - visual)",
+            sync.start_diff_ms, sync.end_diff_ms
         );
     }
 
@@ -239,21 +247,31 @@ pub fn run_app(
 
     if let Some(audio) = report.audio {
         eprintln!(
-            "audio done: {} samples @ {}Hz {}ch, matched={}",
+            "audio done: {} samples @ {}Hz {}ch, matched={}, t=[{}..{}]",
             audio.captured_samples,
             audio.sample_rate,
             audio.channels,
-            audio.matched_processes.join("; ")
+            audio.matched_processes.join("; "),
+            audio.started_at_ms,
+            audio.ended_at_ms
         );
     }
 
     if let Some(visual) = report.visual {
         eprintln!(
-            "visual done: {} frames @ {}fps, out={}, matched={}",
+            "visual done: {} frames @ {}fps, out={}, matched={}, t=[{}..{}]",
             visual.frames_captured,
             visual.fps,
             visual.output_path.display(),
-            visual.matched_processes.join("; ")
+            visual.matched_processes.join("; "),
+            visual.started_at_ms,
+            visual.ended_at_ms
+        );
+    }
+    if let Some(sync) = report.sync {
+        eprintln!(
+            "sync: start_diff_ms={} end_diff_ms={} (audio - visual)",
+            sync.start_diff_ms, sync.end_diff_ms
         );
     }
 

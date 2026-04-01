@@ -2,6 +2,7 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
@@ -172,6 +173,7 @@ impl AudioBackend for CpalNativeBackend {
         stream
             .play()
             .map_err(|e| AudioError::Message(format!("failed to start input stream: {e}")))?;
+        let started_at_ms = now_ms();
         if let Some(duration) = request.duration_secs {
             std::thread::sleep(Duration::from_secs(duration as u64));
         } else if let Some(flag) = stop_flag {
@@ -184,6 +186,7 @@ impl AudioBackend for CpalNativeBackend {
             ));
         }
         drop(stream);
+        let ended_at_ms = now_ms();
 
         let samples = captured
             .lock()
@@ -202,6 +205,8 @@ impl AudioBackend for CpalNativeBackend {
             captured_samples: samples.len(),
             sample_rate,
             channels,
+            started_at_ms,
+            ended_at_ms,
             selected_input_device: selected.info,
             selection_reason: selected.reason,
             matched_processes: Vec::new(),
@@ -297,6 +302,13 @@ fn write_capture_output(
     }
 
     Ok(())
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 fn f32_to_i16(sample: f32) -> i16 {
