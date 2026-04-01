@@ -181,7 +181,18 @@ fn capture_one_process_to_raw(
 ) -> Result<(), AudioError> {
     initialize_mta().ok();
 
-    let desired_format = WaveFormat::new(32, 32, &SampleType::Float, sample_rate, channels, None);
+    let sample_rate_usize = usize::try_from(sample_rate).map_err(|_| {
+        AudioError::Message(format!("invalid sample_rate for WASAPI: {sample_rate}"))
+    })?;
+    let channels_usize = usize::from(channels);
+    let desired_format = WaveFormat::new(
+        32,
+        32,
+        &SampleType::Float,
+        sample_rate_usize,
+        channels_usize,
+        None,
+    );
     let mut audio_client =
         AudioClient::new_application_loopback_client(pid, true).map_err(|e| {
             AudioError::Message(format!("create loopback client for pid {pid} failed: {e}"))
