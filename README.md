@@ -186,6 +186,33 @@ Additional architecture smoke checks:
 - `aarch64-unknown-linux-gnu` (experimental, non-blocking)
 - `armv7-unknown-linux-gnueabihf` (experimental, non-blocking)
 
+## Release Packaging
+
+Release workflow file:
+
+- `.github/workflows/release.yml`
+
+Trigger:
+
+- Push tag `v*` (for example: `v0.1.0`)
+- Or manual `workflow_dispatch` with tag input
+
+Release artifacts:
+
+- Linux:
+  - `x86_64-unknown-linux-gnu`: `.tar.gz` + `.deb`
+  - `i686-unknown-linux-gnu`: `.tar.gz`
+  - `aarch64-unknown-linux-gnu`: `.tar.gz`
+  - `armv7-unknown-linux-gnueabihf`: `.tar.gz`
+- macOS:
+  - `x86_64-apple-darwin`: `.tar.gz`
+  - `aarch64-apple-darwin`: `.tar.gz`
+- Windows:
+  - `x86_64-pc-windows-msvc`: `.zip` (contains `.exe`)
+  - `i686-pc-windows-msvc`: `.zip` (contains `.exe`)
+
+Each release also includes `SHA256SUMS.txt`.
+
 ## Troubleshooting
 
 ### `capture` fails on macOS with no usable input
