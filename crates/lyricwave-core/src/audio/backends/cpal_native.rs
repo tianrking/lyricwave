@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -73,7 +74,7 @@ impl AudioBackend for CpalNativeBackend {
             .map_err(|e| AudioError::Message(format!("failed to get default input config: {e}")))?;
         let sample_rate = config.sample_rate().0;
         let channels = config.channels();
-        let duration = request.duration_secs.unwrap_or(5);
+        let stop_flag = request.stop_flag.clone();
 
         let captured = Arc::new(Mutex::new(Vec::<f32>::new()));
         let captured_clone = Arc::clone(&captured);
@@ -143,7 +144,17 @@ impl AudioBackend for CpalNativeBackend {
         stream
             .play()
             .map_err(|e| AudioError::Message(format!("failed to start input stream: {e}")))?;
-        std::thread::sleep(Duration::from_secs(duration as u64));
+        if let Some(duration) = request.duration_secs {
+            std::thread::sleep(Duration::from_secs(duration as u64));
+        } else if let Some(flag) = stop_flag {
+            while !flag.load(Ordering::Relaxed) {
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        } else {
+            return Err(AudioError::Message(
+                "manual capture requires stop flag when duration is not set".to_string(),
+            ));
+        }
         drop(stream);
 
         let samples = captured

@@ -89,6 +89,9 @@ cargo run -p lyricwave-cli -- --audio-backend cpal-native devices list
 # Capture system audio to file (native CPAL path)
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
 
+# Manual stop recording (press Enter or Ctrl+C to stop)
+cargo run -p lyricwave-cli -- capture system --out out.wav
+
 # Main one-shot workflow: capture -> ASR -> translate -> JSON
 cargo run -p lyricwave-cli -- pipeline run-once \
   --seconds 8 \

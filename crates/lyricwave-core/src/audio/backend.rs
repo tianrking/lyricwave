@@ -1,5 +1,7 @@
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 use thiserror::Error;
 
@@ -49,6 +51,7 @@ pub struct CaptureRequest {
     pub channels: Option<u16>,
     pub format: CaptureFormat,
     pub input_device_hint: Option<String>,
+    pub stop_flag: Option<Arc<AtomicBool>>,
 }
 
 #[derive(Debug, Clone)]

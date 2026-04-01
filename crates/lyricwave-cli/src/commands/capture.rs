@@ -1,4 +1,7 @@
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 
 use anyhow::Result;
 use lyricwave_core::audio::{
@@ -16,6 +19,27 @@ pub fn system(
     format: CaptureFormat,
     input_device: Option<String>,
 ) -> Result<CaptureReport> {
+    let stop_flag = if seconds.is_none() {
+        let flag = Arc::new(AtomicBool::new(false));
+
+        let enter_flag = Arc::clone(&flag);
+        thread::spawn(move || {
+            let mut line = String::new();
+            let _ = std::io::stdin().read_line(&mut line);
+            enter_flag.store(true, Ordering::Relaxed);
+        });
+
+        let ctrlc_flag = Arc::clone(&flag);
+        let _ = ctrlc::set_handler(move || {
+            ctrlc_flag.store(true, Ordering::Relaxed);
+        });
+
+        eprintln!("recording... press Enter (or Ctrl+C) to stop");
+        Some(flag)
+    } else {
+        None
+    };
+
     let target = if stdout {
         CaptureTarget::StdoutPcm
     } else {
@@ -31,6 +55,7 @@ pub fn system(
         channels,
         format,
         input_device_hint: input_device,
+        stop_flag,
     };
     Ok(backend.capture_blocking(&request)?)
 }
