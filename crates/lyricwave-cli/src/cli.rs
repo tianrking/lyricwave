@@ -105,6 +105,36 @@ pub enum CaptureCommands {
         #[arg(long, default_value_t = false)]
         no_prefer_loopback: bool,
     },
+    /// Capture audio from one or multiple selected app processes (Linux Pulse/PipeWire).
+    App {
+        /// Output wav file path.
+        #[arg(long)]
+        out: PathBuf,
+
+        /// Capture duration in seconds; omit for manual stop.
+        #[arg(long)]
+        seconds: Option<u32>,
+
+        /// Optional target sample rate.
+        #[arg(long)]
+        sample_rate: Option<u32>,
+
+        /// Optional target channel count.
+        #[arg(long)]
+        channels: Option<u16>,
+
+        /// Capture format when writing files.
+        #[arg(long, value_enum, default_value_t = FileFormatArg::Wav)]
+        format: FileFormatArg,
+
+        /// Match by process id (repeatable).
+        #[arg(long)]
+        pid: Vec<u32>,
+
+        /// Match by application name contains (repeatable, case-insensitive).
+        #[arg(long)]
+        name: Vec<String>,
+    },
 }
 
 #[derive(Subcommand, Debug)]

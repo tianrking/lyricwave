@@ -20,7 +20,8 @@
 - [ ] Native FLAC output
 - [x] Stream raw PCM to stdout
 - [x] Select audio backend by id (`--audio-backend`)
-- [ ] Per-app/process capture
+- [x] Per-app/process capture on Linux (PulseAudio/PipeWire: single/multi app)
+- [ ] Per-app/process capture on macOS/Windows
 - [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
 
 ### ASR / Translation
@@ -89,6 +90,12 @@ cargo run -p lyricwave-cli -- --audio-backend cpal-native devices list
 
 # Capture system audio to file (native CPAL path)
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
+
+# Capture one app by pid
+cargo run -p lyricwave-cli -- capture app --out app.wav --pid 12345 --seconds 10
+
+# Capture multiple apps by pid/name (single and multiple are the same command)
+cargo run -p lyricwave-cli -- capture app --out apps.wav --pid 12345 --name chrome --name spotify
 
 # Capture with explicit input-device hint
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --input-device "BlackHole"
@@ -218,6 +225,14 @@ Each release also includes `SHA256SUMS.txt`.
 ### `capture` fails on macOS with no usable input
 
 Install/configure a loopback-capable virtual audio device and pass correct input selector/device hint.
+
+### `capture app` fails on Linux
+
+Check:
+
+- PulseAudio/PipeWire user tools installed (`pactl`, `parecord`)
+- target app is currently playing audio (has active `sink-input`)
+- selectors are valid (`--pid` and/or `--name`)
 
 ### `pipeline asr-file` fails for vibevoice
 

@@ -8,7 +8,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crate::audio::selection::select_input_device;
 use crate::audio::{
     AudioBackend, AudioError, BackendCapabilities, CaptureFormat, CaptureReport, CaptureRequest,
-    CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
+    CaptureScope, CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
 };
 
 use super::platform;
@@ -35,7 +35,7 @@ impl AudioBackend for CpalNativeBackend {
     fn capabilities(&self) -> BackendCapabilities {
         BackendCapabilities {
             system_loopback_capture: true,
-            per_app_capture: false,
+            per_app_capture: platform::supports_per_app_capture(),
             note: platform::capability_note(),
         }
     }
@@ -71,6 +71,10 @@ impl AudioBackend for CpalNativeBackend {
     }
 
     fn capture_blocking(&self, request: &CaptureRequest) -> Result<CaptureReport, AudioError> {
+        if let CaptureScope::Processes(_) = &request.scope {
+            return platform::capture_processes(request);
+        }
+
         let host = cpal::default_host();
         let inputs = list_input_devices_with_host(&host)?;
         let selected = select_input_device(
@@ -196,6 +200,7 @@ impl AudioBackend for CpalNativeBackend {
             channels,
             selected_input_device: selected.info,
             selection_reason: selected.reason,
+            matched_processes: Vec::new(),
         })
     }
 }

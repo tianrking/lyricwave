@@ -59,6 +59,33 @@ fn main() -> Result<()> {
                         report.selection_reason
                     );
                 }
+                CaptureCommands::App {
+                    out,
+                    seconds,
+                    sample_rate,
+                    channels,
+                    format,
+                    pid,
+                    name,
+                } => {
+                    let report = commands::capture::app(
+                        backend.as_ref(),
+                        out,
+                        seconds,
+                        sample_rate,
+                        channels,
+                        format.into(),
+                        pid,
+                        name,
+                    )?;
+                    eprintln!(
+                        "captured {} samples @ {}Hz ({} channels), matched={}",
+                        report.captured_samples,
+                        report.sample_rate,
+                        report.channels,
+                        report.matched_processes.join("; ")
+                    );
+                }
             }
         }
         Commands::Pipeline { command } => match command {

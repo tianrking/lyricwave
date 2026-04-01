@@ -57,6 +57,27 @@ pub enum CaptureTarget {
     StdoutPcm,
 }
 
+#[derive(Debug, Clone)]
+pub enum ProcessSelector {
+    Pid(u32),
+    NameContains(String),
+}
+
+impl fmt::Display for ProcessSelector {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Pid(pid) => write!(f, "pid:{pid}"),
+            Self::NameContains(name) => write!(f, "name:*{name}*"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum CaptureScope {
+    System,
+    Processes(Vec<ProcessSelector>),
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum CaptureFormat {
     Wav,
@@ -66,6 +87,7 @@ pub enum CaptureFormat {
 
 #[derive(Debug, Clone)]
 pub struct CaptureRequest {
+    pub scope: CaptureScope,
     pub target: CaptureTarget,
     pub duration_secs: Option<u32>,
     pub sample_rate: Option<u32>,
@@ -83,6 +105,7 @@ pub struct CaptureReport {
     pub channels: u16,
     pub selected_input_device: InputDeviceInfo,
     pub selection_reason: String,
+    pub matched_processes: Vec<String>,
 }
 
 #[derive(Debug, Error)]
