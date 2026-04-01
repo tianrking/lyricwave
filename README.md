@@ -19,6 +19,18 @@ Language:
 - English (this file)
 - [简体中文 README](./README.zh-CN.md)
 
+## First-Time Quick Start
+
+If this is your first time, start with these 3 commands:
+
+```bash
+lyricwave capture system --out /tmp/system.wav --seconds 10
+lyricwave visual system --out /tmp/system.mp4 --seconds 10
+lyricwave record system --audio-out /tmp/a.wav --visual-out /tmp/v.mp4 --seconds 10
+```
+
+You can ignore `daemon` commands unless you are building your own overlay/app integration.
+
 ## Download And Use (Recommended)
 
 Get prebuilt binaries from [Releases](https://github.com/tianrking/lyricwave/releases):
@@ -71,8 +83,9 @@ cargo build --workspace --release
 - one-shot pipeline command (`pipeline run-once`)
 
 ### Daemon
-- JSONL event output (`daemon run`)
-- TCP JSONL streaming (`daemon serve`)
+- For developers building a live overlay/client, not required for normal recording usage
+- `daemon run`: print mock subtitle events in terminal
+- `daemon serve`: expose mock subtitle events over TCP for external clients
 
 ### Visual (Architecture Ready)
 - visual backend registry and platform routing (`visual` module)

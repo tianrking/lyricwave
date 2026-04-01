@@ -41,13 +41,13 @@ lyricwave capture apps-list
 
 ## 5. 系统混音录制
 
-### 4.1 定时录制
+### 5.1 定时录制
 
 ```bash
 lyricwave capture system --out system.wav --seconds 10
 ```
 
-### 4.2 手动停止录制
+### 5.2 手动停止录制
 
 ```bash
 lyricwave capture system --out system.wav
@@ -55,7 +55,7 @@ lyricwave capture system --out system.wav
 
 按 `Enter` 或 `Ctrl+C` 停止。
 
-### 4.3 常用参数
+### 5.3 常用参数
 
 ```bash
 --sample-rate <HZ>
@@ -123,7 +123,7 @@ lyricwave capture apps-split \
 
 ## 8. Pipeline 命令
 
-### 7.1 一次性流水线（录音 -> ASR -> 翻译）
+### 8.1 一次性流水线（录音 -> ASR -> 翻译）
 
 ```bash
 lyricwave pipeline run-once \
@@ -135,7 +135,7 @@ lyricwave pipeline run-once \
   --translator-provider mock
 ```
 
-### 7.2 文件 ASR
+### 8.2 文件 ASR
 
 ```bash
 lyricwave pipeline asr-file \
@@ -146,10 +146,25 @@ lyricwave pipeline asr-file \
 
 ## 9. Daemon 命令
 
+这是干嘛的：
+- `daemon` 是给开发者做“实时字幕浮窗/外部客户端”对接的。
+- 如果你只想录音、录屏、ASR，直接跳过这一节即可。
+
+两个命令的区别：
+- `daemon run`：在当前终端里持续打印“模拟转写事件”（JSON 每行一条）。
+- `daemon serve`：启动一个 TCP 服务，把这些事件推送给别的程序。
+
+常见场景：
+- 你自己写一个客户端，实时接收事件并渲染字幕/翻译。
+
 ```bash
 lyricwave daemon run --target-lang zh --interval-ms 500 --count 5
 lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ```
+
+怎么看输出：
+- `daemon run`：终端里会看到一行一行 JSON 事件。
+- `daemon serve`：终端主要显示服务状态；事件会发给连接该端口的客户端。
 
 ## 10. 平台说明
 

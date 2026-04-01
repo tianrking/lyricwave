@@ -19,6 +19,18 @@
 - [English README](./README.md)
 - 中文（当前）
 
+## 第一次使用，先跑这 3 条
+
+如果你是第一次用，先跑这 3 条最直观：
+
+```bash
+lyricwave capture system --out /tmp/system.wav --seconds 10
+lyricwave visual system --out /tmp/system.mp4 --seconds 10
+lyricwave record system --audio-out /tmp/a.wav --visual-out /tmp/v.mp4 --seconds 10
+```
+
+`daemon` 命令是给开发者做“实时浮窗/外部客户端”对接用的，普通录制可以直接忽略。
+
 ## 下载即用（推荐）
 
 从 [Releases](https://github.com/tianrking/lyricwave/releases) 下载对应平台包：

@@ -41,13 +41,13 @@ lyricwave capture apps-list
 
 ## 5. System Capture
 
-### 4.1 Timed capture
+### 5.1 Timed capture
 
 ```bash
 lyricwave capture system --out system.wav --seconds 10
 ```
 
-### 4.2 Manual stop capture
+### 5.2 Manual stop capture
 
 ```bash
 lyricwave capture system --out system.wav
@@ -55,7 +55,7 @@ lyricwave capture system --out system.wav
 
 Stop by pressing `Enter` or `Ctrl+C`.
 
-### 4.3 Useful options
+### 5.3 Useful options
 
 ```bash
 --sample-rate <HZ>
@@ -123,7 +123,7 @@ Key options:
 
 ## 8. Pipeline Commands
 
-### 7.1 One-shot pipeline (capture -> ASR -> translation)
+### 8.1 One-shot pipeline (capture -> ASR -> translation)
 
 ```bash
 lyricwave pipeline run-once \
@@ -135,7 +135,7 @@ lyricwave pipeline run-once \
   --translator-provider mock
 ```
 
-### 7.2 File ASR
+### 8.2 File ASR
 
 ```bash
 lyricwave pipeline asr-file \
@@ -146,10 +146,25 @@ lyricwave pipeline asr-file \
 
 ## 9. Daemon Commands
 
+What is this:
+- `daemon` is for developers who want to build their own realtime overlay/client.
+- If you just want recording + ASR, you can skip this section.
+
+What each command does:
+- `daemon run`: prints mock transcript events to current terminal (JSON lines).
+- `daemon serve`: starts a TCP server that streams mock transcript events to other programs.
+
+Typical use case:
+- you write another app that reads live transcript events and renders subtitles on screen.
+
 ```bash
 lyricwave daemon run --target-lang zh --interval-ms 500 --count 5
 lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ```
+
+How to understand output:
+- `daemon run` output is a stream of JSON objects, one event per line.
+- `daemon serve` itself prints server status; your client receives JSON events from the TCP socket.
 
 ## 10. Platform Notes
 
