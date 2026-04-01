@@ -30,6 +30,11 @@ cargo run -p lyricwave-cli -- pipeline demo --text "hello from lyricwave" --targ
 
 # Daemon JSON stream for overlay integration
 cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
+
+# Daemon TCP JSONL stream for GUI overlay clients
+cargo run -p lyricwave-cli -- daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
+# Then connect from another terminal:
+nc 127.0.0.1 7878
 ```
 
 ## Architecture

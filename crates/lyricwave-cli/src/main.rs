@@ -10,6 +10,9 @@ use lyricwave_core::audio::{
 };
 use lyricwave_core::pipeline::{DaemonEvent, MockAsrEngine, MockTranslator};
 use lyricwave_core::service::PipelineService;
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpListener;
+use tokio::sync::broadcast;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -116,6 +119,19 @@ enum DaemonCommands {
         #[arg(long, default_value_t = 8)]
         count: u32,
     },
+    /// Serve daemon events over TCP JSON lines for overlay clients.
+    Serve {
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+        #[arg(long, default_value_t = 7878)]
+        port: u16,
+        #[arg(long, default_value = "auto")]
+        source_lang: String,
+        #[arg(long, default_value = "zh")]
+        target_lang: String,
+        #[arg(long, default_value_t = 1000)]
+        interval_ms: u64,
+    },
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -177,6 +193,23 @@ fn main() -> Result<()> {
                 interval_ms,
                 count,
             } => cmd_daemon_run(&source_lang, &target_lang, interval_ms, count)?,
+            DaemonCommands::Serve {
+                host,
+                port,
+                source_lang,
+                target_lang,
+                interval_ms,
+            } => {
+                let rt =
+                    tokio::runtime::Runtime::new().context("failed to create tokio runtime")?;
+                rt.block_on(cmd_daemon_serve(
+                    &host,
+                    port,
+                    &source_lang,
+                    &target_lang,
+                    interval_ms,
+                ))?;
+            }
         },
     }
 
@@ -289,4 +322,67 @@ fn cmd_daemon_run(
     println!("{}", serde_json::to_string(&done_evt)?);
 
     Ok(())
+}
+
+async fn cmd_daemon_serve(
+    host: &str,
+    port: u16,
+    source_lang: &str,
+    target_lang: &str,
+    interval_ms: u64,
+) -> Result<()> {
+    let bind_addr = format!("{host}:{port}");
+    let listener = TcpListener::bind(&bind_addr)
+        .await
+        .with_context(|| format!("failed to bind daemon server at {bind_addr}"))?;
+
+    println!("daemon tcp json stream listening on {bind_addr}");
+
+    let (tx, _) = broadcast::channel::<String>(256);
+
+    let producer_tx = tx.clone();
+    let source = source_lang.to_string();
+    let target = target_lang.to_string();
+    tokio::spawn(async move {
+        let service = PipelineService::new(MockAsrEngine, MockTranslator, 128);
+
+        let started = DaemonEvent::Status {
+            message: "daemon started".to_string(),
+            emitted_at_ms: DaemonEvent::now_ms(),
+        };
+        if let Ok(line) = serde_json::to_string(&started) {
+            let _ = producer_tx.send(line);
+        }
+
+        let mut idx: u64 = 1;
+        loop {
+            let text = format!("live line {idx}");
+            let transcript = service.process_text(&text, &source, &target);
+            let evt = DaemonEvent::Transcript {
+                payload: transcript,
+                emitted_at_ms: DaemonEvent::now_ms(),
+            };
+            if let Ok(line) = serde_json::to_string(&evt) {
+                let _ = producer_tx.send(line);
+            }
+            idx = idx.saturating_add(1);
+            tokio::time::sleep(Duration::from_millis(interval_ms)).await;
+        }
+    });
+
+    loop {
+        let (mut socket, peer) = listener.accept().await?;
+        let mut rx = tx.subscribe();
+        println!("client connected: {peer}");
+        tokio::spawn(async move {
+            while let Ok(line) = rx.recv().await {
+                if socket.write_all(line.as_bytes()).await.is_err() {
+                    break;
+                }
+                if socket.write_all(b"\n").await.is_err() {
+                    break;
+                }
+            }
+        });
+    }
 }
