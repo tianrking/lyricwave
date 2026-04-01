@@ -41,16 +41,6 @@ pub enum CaptureFormat {
     PcmS16Le,
 }
 
-impl CaptureFormat {
-    pub fn ffmpeg_name(self) -> &'static str {
-        match self {
-            Self::Wav => "wav",
-            Self::Flac => "flac",
-            Self::PcmS16Le => "s16le",
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct CaptureRequest {
     pub target: CaptureTarget,
@@ -58,14 +48,14 @@ pub struct CaptureRequest {
     pub sample_rate: Option<u32>,
     pub channels: Option<u16>,
     pub format: CaptureFormat,
-    pub ffmpeg_bin: String,
     pub input_device_hint: Option<String>,
 }
 
 #[derive(Debug, Clone)]
-pub struct CommandSpec {
-    pub program: String,
-    pub args: Vec<String>,
+pub struct CaptureReport {
+    pub captured_samples: usize,
+    pub sample_rate: u32,
+    pub channels: u16,
 }
 
 #[derive(Debug, Error)]
@@ -81,5 +71,5 @@ pub trait AudioBackend: Send + Sync {
     fn backend_name(&self) -> &'static str;
     fn capabilities(&self) -> BackendCapabilities;
     fn list_output_devices(&self) -> Result<Vec<DeviceInfo>, AudioError>;
-    fn build_capture_command(&self, request: &CaptureRequest) -> Result<CommandSpec, AudioError>;
+    fn capture_blocking(&self, request: &CaptureRequest) -> Result<CaptureReport, AudioError>;
 }

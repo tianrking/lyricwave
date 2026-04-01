@@ -11,7 +11,7 @@ use lyricwave_core::audio::CaptureFormat;
 )]
 pub struct Cli {
     /// Audio backend id used for capture/device commands.
-    #[arg(long, global = true, default_value = "cpal+ffmpeg")]
+    #[arg(long, global = true, default_value = "cpal-native")]
     pub audio_backend: String,
 
     #[command(subcommand)]
@@ -98,10 +98,6 @@ pub enum CaptureCommands {
         #[arg(long, value_enum, default_value_t = FileFormatArg::Wav)]
         format: FileFormatArg,
 
-        /// FFmpeg executable path.
-        #[arg(long, default_value = "ffmpeg")]
-        ffmpeg_bin: String,
-
         /// Platform input hint (macOS e.g. :0, Linux monitor source, Windows endpoint name).
         #[arg(long)]
         input_device: Option<String>,
@@ -174,8 +170,6 @@ pub enum PipelineCommands {
         /// Optional input device hint for capture backend.
         #[arg(long)]
         input_device: Option<String>,
-        #[arg(long, default_value = "ffmpeg")]
-        ffmpeg_bin: String,
         #[arg(long)]
         sample_rate: Option<u32>,
         #[arg(long)]
@@ -214,14 +208,12 @@ pub enum DaemonCommands {
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum FileFormatArg {
     Wav,
-    Flac,
 }
 
 impl From<FileFormatArg> for CaptureFormat {
     fn from(value: FileFormatArg) -> Self {
         match value {
             FileFormatArg::Wav => CaptureFormat::Wav,
-            FileFormatArg::Flac => CaptureFormat::Flac,
         }
     }
 }

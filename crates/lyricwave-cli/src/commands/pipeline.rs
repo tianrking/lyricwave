@@ -97,7 +97,6 @@ pub fn run_once(
     target_lang: &str,
     translator_provider: &str,
     input_device: Option<String>,
-    ffmpeg_bin: String,
     sample_rate: Option<u32>,
     channels: Option<u16>,
 ) -> Result<()> {
@@ -117,7 +116,7 @@ pub fn run_once(
     let generated_temp = explicit_output.is_none();
     let capture_path = explicit_output.unwrap_or_else(temp_capture_path);
 
-    capture::system(
+    let capture_report = capture::system(
         backend,
         Some(capture_path.clone()),
         false,
@@ -125,7 +124,6 @@ pub fn run_once(
         sample_rate,
         channels,
         CaptureFormat::Wav,
-        ffmpeg_bin,
         input_device,
     )?;
 
@@ -139,6 +137,11 @@ pub fn run_once(
 
     let output = json!({
         "capture_file": capture_path.display().to_string(),
+        "capture": {
+            "samples": capture_report.captured_samples,
+            "sample_rate": capture_report.sample_rate,
+            "channels": capture_report.channels
+        },
         "asr_provider": asr.name(),
         "translator_provider": translator.name(),
         "source_lang_hint": source_lang,

@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 cpal.workspace = true
+hound.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true

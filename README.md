@@ -15,11 +15,12 @@
 
 - [x] List output devices
 - [x] Build system capture command templates for macOS/Linux/Windows
-- [x] Capture to WAV / FLAC
+- [x] Capture to WAV
+- [ ] Native FLAC output
 - [x] Stream raw PCM to stdout
 - [x] Select audio backend by id (`--audio-backend`)
 - [ ] Per-app/process capture
-- [ ] Native platform loopback implementation without ffmpeg dependency
+- [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
 
 ### ASR / Translation
 
@@ -55,7 +56,6 @@ Notes:
 ### Prerequisites
 
 - Rust stable toolchain
-- `ffmpeg` available in `PATH`
 - Optional for offline ASR:
   - local checkout of `microsoft/VibeVoice`
   - Python environment that can run VibeVoice ASR script
@@ -84,9 +84,9 @@ cargo run -p lyricwave-cli -- backends list
 cargo run -p lyricwave-cli -- providers list
 
 # Explicit backend selection
-cargo run -p lyricwave-cli -- --audio-backend cpal+ffmpeg devices list
+cargo run -p lyricwave-cli -- --audio-backend cpal-native devices list
 
-# Capture system audio to file
+# Capture system audio to file (native CPAL path)
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
 
 # Main one-shot workflow: capture -> ASR -> translate -> JSON

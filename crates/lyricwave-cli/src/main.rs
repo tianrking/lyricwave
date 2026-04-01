@@ -36,19 +36,23 @@ fn main() -> Result<()> {
                     sample_rate,
                     channels,
                     format,
-                    ffmpeg_bin,
                     input_device,
-                } => commands::capture::system(
-                    backend.as_ref(),
-                    out,
-                    stdout,
-                    seconds,
-                    sample_rate,
-                    channels,
-                    format.into(),
-                    ffmpeg_bin,
-                    input_device,
-                )?,
+                } => {
+                    let report = commands::capture::system(
+                        backend.as_ref(),
+                        out,
+                        stdout,
+                        seconds,
+                        sample_rate,
+                        channels,
+                        format.into(),
+                        input_device,
+                    )?;
+                    eprintln!(
+                        "captured {} samples @ {}Hz ({} channels)",
+                        report.captured_samples, report.sample_rate, report.channels
+                    );
+                }
             }
         }
         Commands::Pipeline { command } => match command {
@@ -98,7 +102,6 @@ fn main() -> Result<()> {
                 target_lang,
                 translator_provider,
                 input_device,
-                ffmpeg_bin,
                 sample_rate,
                 channels,
             } => {
@@ -116,7 +119,6 @@ fn main() -> Result<()> {
                     &target_lang,
                     &translator_provider,
                     input_device,
-                    ffmpeg_bin,
                     sample_rate,
                     channels,
                 )?
