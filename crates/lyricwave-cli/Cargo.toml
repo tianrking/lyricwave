@@ -13,4 +13,5 @@ path = "src/main.rs"
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+serde_json.workspace = true
 lyricwave-core = { path = "../lyricwave-core" }

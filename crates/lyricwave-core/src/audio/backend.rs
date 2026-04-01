@@ -1,4 +1,5 @@
 use std::fmt;
+use std::path::PathBuf;
 
 use thiserror::Error;
 
@@ -11,21 +12,60 @@ pub struct DeviceInfo {
 
 impl fmt::Display for DeviceInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let default_tag = if self.is_default_output { " (default)" } else { "" };
+        let default_tag = if self.is_default_output {
+            " (default)"
+        } else {
+            ""
+        };
         write!(f, "{} [{}]{}", self.name, self.id, default_tag)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct CaptureConfig {
-    pub sample_rate: Option<u32>,
-    pub channels: Option<u16>,
-    pub output_device_id: Option<String>,
+pub struct BackendCapabilities {
+    pub system_loopback_capture: bool,
+    pub per_app_capture: bool,
+    pub note: &'static str,
 }
 
-#[derive(Debug)]
-pub struct CaptureStream {
-    pub backend_name: &'static str,
+#[derive(Debug, Clone)]
+pub enum CaptureTarget {
+    File(PathBuf),
+    StdoutPcm,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CaptureFormat {
+    Wav,
+    Flac,
+    PcmS16Le,
+}
+
+impl CaptureFormat {
+    pub fn ffmpeg_name(self) -> &'static str {
+        match self {
+            Self::Wav => "wav",
+            Self::Flac => "flac",
+            Self::PcmS16Le => "s16le",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CaptureRequest {
+    pub target: CaptureTarget,
+    pub duration_secs: Option<u32>,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub format: CaptureFormat,
+    pub ffmpeg_bin: String,
+    pub input_device_hint: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CommandSpec {
+    pub program: String,
+    pub args: Vec<String>,
 }
 
 #[derive(Debug, Error)]
@@ -39,10 +79,7 @@ pub enum AudioError {
 
 pub trait AudioBackend: Send + Sync {
     fn backend_name(&self) -> &'static str;
+    fn capabilities(&self) -> BackendCapabilities;
     fn list_output_devices(&self) -> Result<Vec<DeviceInfo>, AudioError>;
-    fn start_system_capture(&self, _config: CaptureConfig) -> Result<CaptureStream, AudioError> {
-        Err(AudioError::NotImplemented {
-            feature: "system loopback capture",
-        })
-    }
+    fn build_capture_command(&self, request: &CaptureRequest) -> Result<CommandSpec, AudioError>;
 }

@@ -1,10 +1,10 @@
 use tokio::sync::broadcast;
 
-use super::TranscriptEvent;
+use super::DaemonEvent;
 
 #[derive(Clone)]
 pub struct EventHub {
-    tx: broadcast::Sender<TranscriptEvent>,
+    tx: broadcast::Sender<DaemonEvent>,
 }
 
 impl EventHub {
@@ -13,11 +13,11 @@ impl EventHub {
         Self { tx }
     }
 
-    pub fn publish(&self, evt: TranscriptEvent) {
+    pub fn publish(&self, evt: DaemonEvent) {
         let _ = self.tx.send(evt);
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<TranscriptEvent> {
+    pub fn subscribe(&self) -> broadcast::Receiver<DaemonEvent> {
         self.tx.subscribe()
     }
 }
