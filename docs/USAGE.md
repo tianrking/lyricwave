@@ -16,6 +16,7 @@ cargo build --workspace --release
 
 ```bash
 --audio-backend <ID>
+--visual-backend <ID>    # alias: --video-backend
 ```
 
 Current default is `cpal-native`.
@@ -157,46 +158,47 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - App capture uses WASAPI process loopback.
 - The selected process must be actively producing audio while recording.
 
-## 10. Video Commands (Architecture Scaffold)
+## 10. Visual Commands (Architecture Scaffold)
 
 ```bash
-lyricwave video backends
-lyricwave video displays
-lyricwave video capture-screen --out screen.mp4 --seconds 10
+lyricwave visual backends
+lyricwave visual displays
+lyricwave visual capture-display --out screen.mp4 --seconds 10
 ```
 
 Notes:
-- This is the unified video architecture entrypoint.
-- Native per-OS screen recorder implementations are wired by backend platform modules and will be filled incrementally.
+- This is the unified visual architecture entrypoint.
+- Native per-OS display recorder implementations are wired by backend platform modules and will be filled incrementally.
+- Backward compatibility: `lyricwave video ...` and `capture-screen` are accepted aliases.
 
-## 11. Unified Record Session (Audio / Video / A+V)
+## 11. Unified Record Session (Audio / Visual / A+V)
 
-Use one command to run audio-only, video-only, or audio+video recording.
+Use one command to run audio-only, visual-only, or audio+visual recording.
 
 ```bash
 # audio-only
 lyricwave record run --audio-out system.wav --seconds 10
 
-# video-only
-lyricwave record run --video-out screen.mp4 --seconds 10
+# visual-only
+lyricwave record run --visual-out screen.mp4 --seconds 10
 
-# audio + video together
-lyricwave record run --audio-out system.wav --video-out screen.mp4 --seconds 10
+# audio + visual together
+lyricwave record run --audio-out system.wav --visual-out screen.mp4 --seconds 10
 
 # manual stop (no --seconds): press Enter or Ctrl+C
-lyricwave record run --audio-out system.wav --video-out screen.mp4
+lyricwave record run --audio-out system.wav --visual-out screen.mp4
 ```
 
 Key options:
 
 ```bash
 --audio-out <FILE>
---video-out <FILE>
+--visual-out <FILE>      # alias: --video-out
 --seconds <N>            # optional, omit for manual stop
 --sample-rate <HZ>       # audio
 --channels <N>           # audio
 --input-device <HINT>    # audio
 --no-prefer-loopback     # audio
---fps <N>                # video
---display <HINT>         # video
+--fps <N>                # visual
+--display <HINT>         # visual
 ```

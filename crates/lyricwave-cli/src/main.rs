@@ -7,7 +7,7 @@ use lyricwave_core::audio::build_audio_backend;
 
 use crate::cli::{
     BackendCommands, CaptureCommands, Cli, Commands, DaemonCommands, DeviceCommands,
-    PipelineCommands, ProviderCommands, RecordCommands, VideoCommands,
+    PipelineCommands, ProviderCommands, RecordCommands, VisualCommands,
 };
 
 fn main() -> Result<()> {
@@ -211,26 +211,26 @@ fn main() -> Result<()> {
                 ))?;
             }
         },
-        Commands::Video { command } => match command {
-            VideoCommands::Backends => commands::video::list_backends(),
-            VideoCommands::Displays => {
-                let backend = commands::video::build_backend(&cli.video_backend)?;
-                commands::video::list_displays(backend.as_ref())?;
+        Commands::Visual { command } => match command {
+            VisualCommands::Backends => commands::visual::list_backends(),
+            VisualCommands::Displays => {
+                let backend = commands::visual::build_backend(&cli.visual_backend)?;
+                commands::visual::list_displays(backend.as_ref())?;
             }
-            VideoCommands::CaptureScreen {
+            VisualCommands::CaptureDisplay {
                 out,
                 seconds,
                 fps,
                 display,
             } => {
-                let backend = commands::video::build_backend(&cli.video_backend)?;
-                commands::video::capture_screen(backend.as_ref(), out, seconds, fps, display)?;
+                let backend = commands::visual::build_backend(&cli.visual_backend)?;
+                commands::visual::capture_display(backend.as_ref(), out, seconds, fps, display)?;
             }
         },
         Commands::Record { command } => match command {
             RecordCommands::Run {
                 audio_out,
-                video_out,
+                visual_out,
                 seconds,
                 sample_rate,
                 channels,
@@ -240,9 +240,9 @@ fn main() -> Result<()> {
                 display,
             } => commands::record::run(
                 &cli.audio_backend,
-                &cli.video_backend,
+                &cli.visual_backend,
                 audio_out,
-                video_out,
+                visual_out,
                 seconds,
                 sample_rate,
                 channels,

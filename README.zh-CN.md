@@ -65,15 +65,15 @@ lyricwave devices list
 # 查看当前活跃/候选音频应用
 lyricwave capture apps-list
 
-# 查看 video 后端与显示器
-lyricwave video backends
-lyricwave video displays
+# 查看 visual 后端与显示器
+lyricwave visual backends
+lyricwave visual displays
 
-# video 录屏命令骨架（原生实现正在完善中）
-lyricwave video capture-screen --out screen.mp4 --seconds 10
+# visual 画面采集命令骨架（原生实现正在完善中）
+lyricwave visual capture-display --out screen.mp4 --seconds 10
 
-# 统一会话：音频+视频同时录制
-lyricwave record run --audio-out mic.wav --video-out screen.mp4 --seconds 10
+# 统一会话：音频+画面同时采集
+lyricwave record run --audio-out mic.wav --visual-out screen.mp4 --seconds 10
 
 # 录制系统混音（10秒）
 lyricwave capture system --out system.wav --seconds 10
@@ -103,14 +103,18 @@ lyricwave capture apps-split \
 
 - `crates/lyricwave-core`
   - `audio`：音频采集域
-  - `video`：视频采集域
-  - `recording`：A/V 顶层会话编排（组合 audio/video）
+  - `visual`：画面帧采集域（显示器/窗口流）
+  - `composition`：A/V 顶层会话编排（组合 audio/visual）
   - `pipeline`：ASR/翻译处理域（采集后的处理流）
   - `service`：pipeline 服务辅助层
 - `crates/lyricwave-cli`
   - `cli.rs`：命令模型定义
   - `commands/*`：各命令处理器
   - `main.rs`：命令分发
+
+兼容性说明：
+- `video` 与 `recording` 仍保留为兼容 re-export 模块名。
+- CLI 兼容旧别名：`video` 命令，以及 `--video-out` / `--video-backend`。
 
 ## 常见问题
 

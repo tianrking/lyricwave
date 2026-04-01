@@ -7,15 +7,17 @@ use anyhow::Result;
 use lyricwave_core::audio::{
     CaptureFormat, CaptureRequest, CaptureScope, CaptureTarget, build_audio_backend,
 };
-use lyricwave_core::recording::{RecordingCoordinator, RecordingRequest};
-use lyricwave_core::video::{VideoCaptureRequest, VideoScope, VideoTarget, build_video_backend};
+use lyricwave_core::composition::{CompositionCoordinator, CompositionRequest};
+use lyricwave_core::visual::{
+    VisualCaptureRequest, VisualScope, VisualTarget, build_visual_backend,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     audio_backend_id: &str,
-    video_backend_id: &str,
+    visual_backend_id: &str,
     audio_out: Option<PathBuf>,
-    video_out: Option<PathBuf>,
+    visual_out: Option<PathBuf>,
     seconds: Option<u32>,
     sample_rate: Option<u32>,
     channels: Option<u16>,
@@ -24,9 +26,9 @@ pub fn run(
     fps: Option<u32>,
     display: Option<String>,
 ) -> Result<()> {
-    if audio_out.is_none() && video_out.is_none() {
+    if audio_out.is_none() && visual_out.is_none() {
         return Err(anyhow::anyhow!(
-            "record run requires at least one output: --audio-out and/or --video-out"
+            "record run requires at least one output: --audio-out and/or --visual-out"
         ));
     }
 
@@ -63,19 +65,19 @@ pub fn run(
         None
     };
 
-    let video_backend = if video_out.is_some() {
+    let visual_backend = if visual_out.is_some() {
         Some(
-            build_video_backend(video_backend_id)
+            build_visual_backend(visual_backend_id)
                 .map_err(anyhow::Error::msg)
                 .map_err(|e| {
-                    anyhow::anyhow!("failed to init video backend '{}': {e}", video_backend_id)
+                    anyhow::anyhow!("failed to init visual backend '{}': {e}", visual_backend_id)
                 })?,
         )
     } else {
         None
     };
 
-    let request = RecordingRequest {
+    let request = CompositionRequest {
         audio: audio_out.map(|path| CaptureRequest {
             scope: CaptureScope::System,
             target: CaptureTarget::File(path),
@@ -87,9 +89,9 @@ pub fn run(
             prefer_loopback: !no_prefer_loopback,
             stop_flag: stop_flag.clone(),
         }),
-        video: video_out.map(|path| VideoCaptureRequest {
-            scope: VideoScope::Display,
-            target: VideoTarget::File(path),
+        visual: visual_out.map(|path| VisualCaptureRequest {
+            scope: VisualScope::Display,
+            target: VisualTarget::File(path),
             duration_secs: seconds,
             fps,
             display_hint: display,
@@ -97,10 +99,11 @@ pub fn run(
         }),
     };
 
-    let coordinator = RecordingCoordinator::new(audio_backend.as_deref(), video_backend.as_deref());
+    let coordinator =
+        CompositionCoordinator::new(audio_backend.as_deref(), visual_backend.as_deref());
     let report = coordinator
         .run_blocking(request)
-        .map_err(|e| anyhow::anyhow!("record session failed: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("composition session failed: {e}"))?;
 
     if let Some(audio) = report.audio {
         eprintln!(
@@ -113,13 +116,13 @@ pub fn run(
         );
     }
 
-    if let Some(video) = report.video {
+    if let Some(visual) = report.visual {
         eprintln!(
-            "video done: {} frames @ {}fps, display='{}', out={}",
-            video.frames_captured,
-            video.fps,
-            video.selected_display.name,
-            video.output_path.display()
+            "visual done: {} frames @ {}fps, display='{}', out={}",
+            visual.frames_captured,
+            visual.fps,
+            visual.selected_display.name,
+            visual.output_path.display()
         );
     }
 

@@ -74,16 +74,16 @@ cargo build --workspace --release
 - JSONL event output (`daemon run`)
 - TCP JSONL streaming (`daemon serve`)
 
-### Video (Architecture Ready)
-- video backend registry and platform routing (`video` module)
-- display discovery command (`video displays`)
-- screen capture command scaffold (`video capture-screen`) for unified future A/V orchestration
+### Visual (Architecture Ready)
+- visual backend registry and platform routing (`visual` module)
+- display discovery command (`visual displays`)
+- display-frame capture command scaffold (`visual capture-display`) for unified future A/V composition
 
-### Recording (Top-Level Orchestration)
-- unified A/V coordinator (`recording` module) for:
+### Composition (Top-Level Orchestration)
+- unified A/V coordinator (`composition` module) for:
   - audio-only session
-  - video-only session
-  - audio + video parallel session
+  - visual-only session
+  - audio + visual parallel session
 
 ## Quick CLI Examples
 
@@ -96,15 +96,15 @@ lyricwave devices list
 # list current active/candidate app processes
 lyricwave capture apps-list
 
-# video backend and display discovery
-lyricwave video backends
-lyricwave video displays
+# visual backend and display discovery
+lyricwave visual backends
+lyricwave visual displays
 
-# video capture scaffold command (native implementation in progress)
-lyricwave video capture-screen --out screen.mp4 --seconds 10
+# visual capture scaffold command (native implementation in progress)
+lyricwave visual capture-display --out screen.mp4 --seconds 10
 
-# unified session: audio + video together
-lyricwave record run --audio-out mic.wav --video-out screen.mp4 --seconds 10
+# unified session: audio + visual together
+lyricwave record run --audio-out mic.wav --visual-out screen.mp4 --seconds 10
 
 # capture system mix (10s)
 lyricwave capture system --out system.wav --seconds 10
@@ -134,14 +134,18 @@ lyricwave capture apps-split \
 
 - `crates/lyricwave-core`
   - `audio`: audio capture domain
-  - `video`: video capture domain
-  - `recording`: top-level A/V session orchestration (compose audio/video)
+  - `visual`: visual frame capture domain (display/window stream)
+  - `composition`: top-level A/V session orchestration (compose audio/visual)
   - `pipeline`: ASR/translation processing domain (post-capture flow)
   - `service`: pipeline service helpers
 - `crates/lyricwave-cli`
   - `cli.rs`: command model
   - `commands/*`: command handlers
   - `main.rs`: dispatcher
+
+Compatibility:
+- `video` and `recording` module names are preserved as compatibility re-exports.
+- CLI also accepts legacy aliases: `video` command and `--video-out` / `--video-backend`.
 
 ## Troubleshooting
 

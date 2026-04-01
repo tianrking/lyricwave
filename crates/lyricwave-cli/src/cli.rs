@@ -13,9 +13,14 @@ pub struct Cli {
     /// Audio backend id used for capture/device commands.
     #[arg(long, global = true, default_value = "cpal-native")]
     pub audio_backend: String,
-    /// Video backend id used for video commands.
-    #[arg(long, global = true, default_value = "platform-native")]
-    pub video_backend: String,
+    /// Visual backend id used for visual commands.
+    #[arg(
+        long = "visual-backend",
+        alias = "video-backend",
+        global = true,
+        default_value = "platform-native"
+    )]
+    pub visual_backend: String,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -53,12 +58,13 @@ pub enum Commands {
         #[command(subcommand)]
         command: DaemonCommands,
     },
-    /// Video backend/device/capture commands
-    Video {
+    /// Visual backend/device/capture commands
+    #[command(alias = "video")]
+    Visual {
         #[command(subcommand)]
-        command: VideoCommands,
+        command: VisualCommands,
     },
-    /// Unified recording session (audio-only / video-only / audio+video)
+    /// Unified composition session (audio-only / visual-only / audio+visual)
     Record {
         #[command(subcommand)]
         command: RecordCommands,
@@ -287,14 +293,15 @@ pub enum DaemonCommands {
 }
 
 #[derive(Subcommand, Debug)]
-pub enum VideoCommands {
-    /// List video backend catalog
+pub enum VisualCommands {
+    /// List visual backend catalog
     Backends,
     /// List available displays
     Displays,
-    /// Capture display/screen to a file (scaffold command)
-    CaptureScreen {
-        /// Output file path (recommended extension: .mp4 or .mkv)
+    /// Capture display frames to a file (scaffold command).
+    #[command(name = "capture-display", alias = "capture-screen")]
+    CaptureDisplay {
+        /// Output file path (recommended extension: .mp4 / .mkv / image stream container)
         #[arg(long)]
         out: PathBuf,
         /// Capture duration in seconds. Omit for manual stop.
@@ -311,14 +318,14 @@ pub enum VideoCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum RecordCommands {
-    /// Run one recording session with audio and/or video outputs.
+    /// Run one composition session with audio and/or visual outputs.
     Run {
         /// Optional audio output wav file path.
         #[arg(long)]
         audio_out: Option<PathBuf>,
-        /// Optional video output file path.
-        #[arg(long)]
-        video_out: Option<PathBuf>,
+        /// Optional visual output file path.
+        #[arg(long = "visual-out", alias = "video-out")]
+        visual_out: Option<PathBuf>,
         /// Duration in seconds. Omit for manual stop.
         #[arg(long)]
         seconds: Option<u32>,
@@ -334,10 +341,10 @@ pub enum RecordCommands {
         /// Disable loopback-first auto selection for audio.
         #[arg(long, default_value_t = false)]
         no_prefer_loopback: bool,
-        /// Video target fps.
+        /// Visual target fps.
         #[arg(long)]
         fps: Option<u32>,
-        /// Optional display hint for video.
+        /// Optional display hint for visual capture.
         #[arg(long)]
         display: Option<String>,
     },

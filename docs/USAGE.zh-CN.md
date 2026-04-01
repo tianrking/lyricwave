@@ -16,6 +16,7 @@ cargo build --workspace --release
 
 ```bash
 --audio-backend <ID>
+--visual-backend <ID>    # 兼容别名：--video-backend
 ```
 
 当前默认后端为 `cpal-native`。
@@ -157,46 +158,47 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - 按应用录制使用 WASAPI process loopback。
 - 目标进程必须在录制期间真实发声。
 
-## 10. Video 命令（架构骨架）
+## 10. Visual 命令（架构骨架）
 
 ```bash
-lyricwave video backends
-lyricwave video displays
-lyricwave video capture-screen --out screen.mp4 --seconds 10
+lyricwave visual backends
+lyricwave visual displays
+lyricwave visual capture-display --out screen.mp4 --seconds 10
 ```
 
 说明：
-- 这是统一的 video 架构入口。
+- 这是统一的 visual 架构入口。
 - 各平台原生录屏实现已经有后端路由，后续会逐步填充。
+- 兼容旧别名：`lyricwave video ...` 与 `capture-screen` 仍可使用。
 
-## 11. 统一录制会话（音频 / 视频 / 音视频联合）
+## 11. 统一录制会话（音频 / 画面 / 音画联合）
 
-通过一条命令可执行仅音频、仅视频、或音视频联合录制。
+通过一条命令可执行仅音频、仅画面、或音画联合录制。
 
 ```bash
 # 仅音频
 lyricwave record run --audio-out system.wav --seconds 10
 
-# 仅视频
-lyricwave record run --video-out screen.mp4 --seconds 10
+# 仅画面
+lyricwave record run --visual-out screen.mp4 --seconds 10
 
-# 音频+视频同时录
-lyricwave record run --audio-out system.wav --video-out screen.mp4 --seconds 10
+# 音频+画面同时录
+lyricwave record run --audio-out system.wav --visual-out screen.mp4 --seconds 10
 
 # 手动停止（不传 --seconds）：按 Enter 或 Ctrl+C
-lyricwave record run --audio-out system.wav --video-out screen.mp4
+lyricwave record run --audio-out system.wav --visual-out screen.mp4
 ```
 
 关键参数：
 
 ```bash
 --audio-out <FILE>
---video-out <FILE>
+--visual-out <FILE>      # 兼容别名：--video-out
 --seconds <N>            # 可选，不传即手动停止
 --sample-rate <HZ>       # 音频
 --channels <N>           # 音频
 --input-device <HINT>    # 音频
 --no-prefer-loopback     # 音频
---fps <N>                # 视频
---display <HINT>         # 视频
+--fps <N>                # 画面
+--display <HINT>         # 画面
 ```

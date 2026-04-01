@@ -4,18 +4,19 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use anyhow::Result;
-use lyricwave_core::video::{
-    VideoBackend, VideoCaptureRequest, VideoScope, VideoTarget, build_video_backend, video_backends,
+use lyricwave_core::visual::{
+    VisualBackend, VisualCaptureRequest, VisualScope, VisualTarget, build_visual_backend,
+    visual_backends,
 };
 
 pub fn list_backends() {
-    println!("video_backends:");
-    for backend in video_backends() {
+    println!("visual_backends:");
+    for backend in visual_backends() {
         println!("- id={} note={}", backend.id, backend.note);
     }
 }
 
-pub fn list_displays(backend: &dyn VideoBackend) -> Result<()> {
+pub fn list_displays(backend: &dyn VisualBackend) -> Result<()> {
     let displays = backend.list_displays()?;
     let caps = backend.capabilities();
 
@@ -37,8 +38,8 @@ pub fn list_displays(backend: &dyn VideoBackend) -> Result<()> {
     Ok(())
 }
 
-pub fn capture_screen(
-    backend: &dyn VideoBackend,
+pub fn capture_display(
+    backend: &dyn VisualBackend,
     out: PathBuf,
     seconds: Option<u32>,
     fps: Option<u32>,
@@ -65,9 +66,9 @@ pub fn capture_screen(
         None
     };
 
-    let report = backend.capture_blocking(&VideoCaptureRequest {
-        scope: VideoScope::Display,
-        target: VideoTarget::File(out.clone()),
+    let report = backend.capture_blocking(&VisualCaptureRequest {
+        scope: VisualScope::Display,
+        target: VisualTarget::File(out.clone()),
         duration_secs: seconds,
         fps,
         display_hint: display,
@@ -86,8 +87,8 @@ pub fn capture_screen(
     Ok(())
 }
 
-pub fn build_backend(backend_id: &str) -> Result<Box<dyn VideoBackend>> {
-    build_video_backend(backend_id)
+pub fn build_backend(backend_id: &str) -> Result<Box<dyn VisualBackend>> {
+    build_visual_backend(backend_id)
         .map_err(anyhow::Error::msg)
-        .map_err(|e| anyhow::anyhow!("failed to initialize video backend '{}': {e}", backend_id))
+        .map_err(|e| anyhow::anyhow!("failed to initialize visual backend '{}': {e}", backend_id))
 }

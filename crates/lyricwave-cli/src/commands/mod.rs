@@ -5,4 +5,4 @@ pub mod devices;
 pub mod pipeline;
 pub mod providers;
 pub mod record;
-pub mod video;
+pub mod visual;

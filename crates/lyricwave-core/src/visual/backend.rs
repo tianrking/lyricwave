@@ -26,26 +26,26 @@ impl fmt::Display for DisplayInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct VideoBackendCapabilities {
+pub struct VisualBackendCapabilities {
     pub screen_capture: bool,
     pub window_capture: bool,
     pub note: &'static str,
 }
 
 #[derive(Debug, Clone)]
-pub enum VideoTarget {
+pub enum VisualTarget {
     File(PathBuf),
 }
 
 #[derive(Debug, Clone)]
-pub enum VideoScope {
+pub enum VisualScope {
     Display,
 }
 
 #[derive(Debug, Clone)]
-pub struct VideoCaptureRequest {
-    pub scope: VideoScope,
-    pub target: VideoTarget,
+pub struct VisualCaptureRequest {
+    pub scope: VisualScope,
+    pub target: VisualTarget,
     pub duration_secs: Option<u32>,
     pub fps: Option<u32>,
     pub display_hint: Option<String>,
@@ -53,7 +53,7 @@ pub struct VideoCaptureRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct VideoCaptureReport {
+pub struct VisualCaptureReport {
     pub frames_captured: usize,
     pub fps: u32,
     pub selected_display: DisplayInfo,
@@ -62,7 +62,7 @@ pub struct VideoCaptureReport {
 }
 
 #[derive(Debug, Error)]
-pub enum VideoError {
+pub enum VisualError {
     #[error("{0}")]
     Message(String),
 
@@ -70,12 +70,12 @@ pub enum VideoError {
     NotImplemented { feature: &'static str },
 }
 
-pub trait VideoBackend: Send + Sync {
+pub trait VisualBackend: Send + Sync {
     fn backend_name(&self) -> &'static str;
-    fn capabilities(&self) -> VideoBackendCapabilities;
-    fn list_displays(&self) -> Result<Vec<DisplayInfo>, VideoError>;
+    fn capabilities(&self) -> VisualBackendCapabilities;
+    fn list_displays(&self) -> Result<Vec<DisplayInfo>, VisualError>;
     fn capture_blocking(
         &self,
-        request: &VideoCaptureRequest,
-    ) -> Result<VideoCaptureReport, VideoError>;
+        request: &VisualCaptureRequest,
+    ) -> Result<VisualCaptureReport, VisualError>;
 }
