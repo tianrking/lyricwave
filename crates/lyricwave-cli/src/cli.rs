@@ -105,7 +105,7 @@ pub enum CaptureCommands {
         #[arg(long, default_value_t = false)]
         no_prefer_loopback: bool,
     },
-    /// Capture audio from one or multiple selected app processes (Linux Pulse/PipeWire).
+    /// Capture audio from selected app processes (macOS ScreenCaptureKit or Linux Pulse/PipeWire).
     App {
         /// Output wav file path.
         #[arg(long)]

@@ -21,7 +21,8 @@
 - [x] Stream raw PCM to stdout
 - [x] Select audio backend by id (`--audio-backend`)
 - [x] Per-app/process capture on Linux (PulseAudio/PipeWire: single/multi app)
-- [ ] Per-app/process capture on macOS/Windows
+- [x] Per-app/process capture on macOS (ScreenCaptureKit: single/multi app, requires `--seconds`)
+- [ ] Per-app/process capture on Windows
 - [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
 
 ### ASR / Translation
@@ -225,6 +226,14 @@ Each release also includes `SHA256SUMS.txt`.
 ### `capture` fails on macOS with no usable input
 
 Install/configure a loopback-capable virtual audio device and pass correct input selector/device hint.
+
+### `capture app` fails on macOS
+
+Check:
+
+- System Settings -> Privacy & Security -> Screen Recording: allow terminal/app
+- run command with `--seconds` (current macOS helper requires fixed duration)
+- target app is running and matches `--pid` / `--name`
 
 ### `capture app` fails on Linux
 
