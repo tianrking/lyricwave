@@ -7,7 +7,9 @@ mod unsupported;
 #[cfg(target_os = "windows")]
 mod windows;
 
-use crate::visual::{DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError};
+use crate::visual::{
+    ActiveVisualProcessInfo, DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError,
+};
 
 #[cfg(target_os = "linux")]
 pub fn capability_note() -> &'static str {
@@ -41,6 +43,23 @@ pub fn list_displays() -> Result<Vec<DisplayInfo>, VisualError> {
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 pub fn list_displays() -> Result<Vec<DisplayInfo>, VisualError> {
     unsupported::list_displays()
+}
+
+#[cfg(target_os = "linux")]
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+    linux::list_active_visual_processes()
+}
+#[cfg(target_os = "macos")]
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+    macos::list_active_visual_processes()
+}
+#[cfg(target_os = "windows")]
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+    windows::list_active_visual_processes()
+}
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+    unsupported::list_active_visual_processes()
 }
 
 #[cfg(target_os = "linux")]

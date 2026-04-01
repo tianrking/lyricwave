@@ -29,6 +29,7 @@ impl fmt::Display for DisplayInfo {
 pub struct VisualBackendCapabilities {
     pub screen_capture: bool,
     pub window_capture: bool,
+    pub per_app_capture: bool,
     pub note: &'static str,
 }
 
@@ -38,8 +39,36 @@ pub enum VisualTarget {
 }
 
 #[derive(Debug, Clone)]
+pub enum VisualProcessSelector {
+    Pid(u32),
+    NameContains(String),
+}
+
+impl fmt::Display for VisualProcessSelector {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Pid(pid) => write!(f, "pid:{pid}"),
+            Self::NameContains(name) => write!(f, "name:*{name}*"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ActiveVisualProcessInfo {
+    pub pid: u32,
+    pub name: String,
+}
+
+impl fmt::Display for ActiveVisualProcessInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (pid={})", self.name, self.pid)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum VisualScope {
-    Display,
+    System,
+    Processes(Vec<VisualProcessSelector>),
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +88,7 @@ pub struct VisualCaptureReport {
     pub selected_display: DisplayInfo,
     pub output_path: PathBuf,
     pub backend_note: String,
+    pub matched_processes: Vec<String>,
 }
 
 #[derive(Debug, Error)]
@@ -74,6 +104,7 @@ pub trait VisualBackend: Send + Sync {
     fn backend_name(&self) -> &'static str;
     fn capabilities(&self) -> VisualBackendCapabilities;
     fn list_displays(&self) -> Result<Vec<DisplayInfo>, VisualError>;
+    fn list_active_visual_processes(&self) -> Result<Vec<ActiveVisualProcessInfo>, VisualError>;
     fn capture_blocking(
         &self,
         request: &VisualCaptureRequest,

@@ -158,34 +158,37 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - 按应用录制使用 WASAPI process loopback。
 - 目标进程必须在录制期间真实发声。
 
-## 10. Visual 命令（架构骨架）
+## 10. Visual 命令
 
 ```bash
 lyricwave visual backends
 lyricwave visual displays
-lyricwave visual capture-display --out screen.mp4 --seconds 10
+lyricwave visual system --out screen.mp4 --seconds 10
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
+lyricwave visual apps-list
+lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-active
 ```
 
 说明：
-- 这是统一的 visual 架构入口。
-- 各平台原生录屏实现已经有后端路由，后续会逐步填充。
+- `visual app` / `visual apps-split` 依赖各平台原生“按进程画面路由”能力，部分平台当前可能返回 NotImplemented。
 
 ## 11. 统一录制会话（音频 / 画面 / 音画联合）
 
-通过一条命令可执行仅音频、仅画面、或音画联合录制。
+通过分层命令执行系统级与应用级音画联合录制。
 
 ```bash
-# 仅音频
-lyricwave record run --audio-out system.wav --seconds 10
+# 系统级音画合成
+lyricwave record system --audio-out system.wav --visual-out system.mp4 --seconds 10
 
-# 仅画面
-lyricwave record run --visual-out screen.mp4 --seconds 10
+# 应用级音画合成（可单选也可多选）
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+lyricwave record app --audio-out apps.wav --visual-out apps.mp4 --name "Chrome" --name "Music" --seconds 10
 
-# 音频+画面同时录
-lyricwave record run --audio-out system.wav --visual-out screen.mp4 --seconds 10
+# 应用级拆分（每个应用输出一份音频+一份画面）
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
 
 # 手动停止（不传 --seconds）：按 Enter 或 Ctrl+C
-lyricwave record run --audio-out system.wav --visual-out screen.mp4
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome"
 ```
 
 关键参数：
@@ -193,11 +196,16 @@ lyricwave record run --audio-out system.wav --visual-out screen.mp4
 ```bash
 --audio-out <FILE>
 --visual-out <FILE>
---seconds <N>            # 可选，不传即手动停止
+--seconds <N>            # `record app/system` 可选；apps-split 必填
 --sample-rate <HZ>       # 音频
 --channels <N>           # 音频
 --input-device <HINT>    # 音频
 --no-prefer-loopback     # 音频
 --fps <N>                # 画面
 --display <HINT>         # 画面
+--pid <PID>              # app/apps-split 选择器，可重复
+--name <TEXT>            # app/apps-split 选择器，可重复
+--all-active             # apps-split 从活跃进程选择
+--no-audio               # apps-split 专用
+--no-visual              # apps-split 专用
 ```

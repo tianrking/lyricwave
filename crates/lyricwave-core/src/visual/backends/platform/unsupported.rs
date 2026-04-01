@@ -1,10 +1,16 @@
-use crate::visual::{DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError};
+use crate::visual::{
+    ActiveVisualProcessInfo, DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError,
+};
 
 pub fn capability_note() -> &'static str {
     "Unsupported OS for native visual capture backend scaffold."
 }
 
 pub fn list_displays() -> Result<Vec<DisplayInfo>, VisualError> {
+    Ok(vec![])
+}
+
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
     Ok(vec![])
 }
 

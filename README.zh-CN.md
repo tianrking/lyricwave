@@ -69,11 +69,18 @@ lyricwave capture apps-list
 lyricwave visual backends
 lyricwave visual displays
 
-# visual 画面采集命令骨架（原生实现正在完善中）
-lyricwave visual capture-display --out screen.mp4 --seconds 10
+# visual 画面采集
+lyricwave visual system --out screen.mp4 --seconds 10
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
 
-# 统一会话：音频+画面同时采集
-lyricwave record run --audio-out mic.wav --visual-out screen.mp4 --seconds 10
+# 统一会话：系统级音画
+lyricwave record system --audio-out mic.wav --visual-out screen.mp4 --seconds 10
+
+# 统一会话：指定应用音画
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+
+# 按应用拆分输出音画
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
 
 # 录制系统混音（10秒）
 lyricwave capture system --out system.wav --seconds 10

@@ -296,9 +296,8 @@ pub enum VisualCommands {
     Backends,
     /// List available displays
     Displays,
-    /// Capture display frames to a file (scaffold command).
-    #[command(name = "capture-display")]
-    CaptureDisplay {
+    /// Capture system visual output (display stream) to a file.
+    System {
         /// Output file path (recommended extension: .mp4 / .mkv / image stream container)
         #[arg(long)]
         out: PathBuf,
@@ -312,12 +311,42 @@ pub enum VisualCommands {
         #[arg(long)]
         display: Option<String>,
     },
+    /// Capture selected app visual output (future per-OS app/window routing).
+    App {
+        #[arg(long)]
+        out: PathBuf,
+        #[arg(long)]
+        seconds: Option<u32>,
+        #[arg(long)]
+        fps: Option<u32>,
+        #[arg(long)]
+        pid: Vec<u32>,
+        #[arg(long)]
+        name: Vec<String>,
+    },
+    /// List active visual processes that backend can detect.
+    AppsList,
+    /// Capture multiple app visuals to independent files.
+    AppsSplit {
+        #[arg(long)]
+        out_dir: PathBuf,
+        #[arg(long)]
+        seconds: u32,
+        #[arg(long)]
+        fps: Option<u32>,
+        #[arg(long)]
+        pid: Vec<u32>,
+        #[arg(long)]
+        name: Vec<String>,
+        #[arg(long, default_value_t = false)]
+        all_active: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
 pub enum RecordCommands {
-    /// Run one composition session with audio and/or visual outputs.
-    Run {
+    /// Compose system audio + system visual in one session.
+    System {
         /// Optional audio output wav file path.
         #[arg(long)]
         audio_out: Option<PathBuf>,
@@ -345,6 +374,48 @@ pub enum RecordCommands {
         /// Optional display hint for visual capture.
         #[arg(long)]
         display: Option<String>,
+    },
+    /// Compose selected app audio + selected app visual in one session.
+    App {
+        #[arg(long)]
+        audio_out: Option<PathBuf>,
+        #[arg(long = "visual-out")]
+        visual_out: Option<PathBuf>,
+        #[arg(long)]
+        seconds: Option<u32>,
+        #[arg(long)]
+        sample_rate: Option<u32>,
+        #[arg(long)]
+        channels: Option<u16>,
+        #[arg(long)]
+        fps: Option<u32>,
+        #[arg(long)]
+        pid: Vec<u32>,
+        #[arg(long)]
+        name: Vec<String>,
+    },
+    /// Compose selected app audio/visual into independent per-process files.
+    AppsSplit {
+        #[arg(long)]
+        out_dir: PathBuf,
+        #[arg(long)]
+        seconds: u32,
+        #[arg(long)]
+        sample_rate: Option<u32>,
+        #[arg(long)]
+        channels: Option<u16>,
+        #[arg(long)]
+        fps: Option<u32>,
+        #[arg(long)]
+        pid: Vec<u32>,
+        #[arg(long)]
+        name: Vec<String>,
+        #[arg(long, default_value_t = false)]
+        all_active: bool,
+        #[arg(long, default_value_t = false)]
+        no_audio: bool,
+        #[arg(long, default_value_t = false)]
+        no_visual: bool,
     },
 }
 

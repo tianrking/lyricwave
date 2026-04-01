@@ -217,18 +217,51 @@ fn main() -> Result<()> {
                 let backend = commands::visual::build_backend(&cli.visual_backend)?;
                 commands::visual::list_displays(backend.as_ref())?;
             }
-            VisualCommands::CaptureDisplay {
+            VisualCommands::System {
                 out,
                 seconds,
                 fps,
                 display,
             } => {
                 let backend = commands::visual::build_backend(&cli.visual_backend)?;
-                commands::visual::capture_display(backend.as_ref(), out, seconds, fps, display)?;
+                commands::visual::system(backend.as_ref(), out, seconds, fps, display)?;
+            }
+            VisualCommands::App {
+                out,
+                seconds,
+                fps,
+                pid,
+                name,
+            } => {
+                let backend = commands::visual::build_backend(&cli.visual_backend)?;
+                commands::visual::app(backend.as_ref(), out, seconds, fps, pid, name)?;
+            }
+            VisualCommands::AppsList => {
+                let backend = commands::visual::build_backend(&cli.visual_backend)?;
+                commands::visual::apps_list(backend.as_ref())?;
+            }
+            VisualCommands::AppsSplit {
+                out_dir,
+                seconds,
+                fps,
+                pid,
+                name,
+                all_active,
+            } => {
+                let backend = commands::visual::build_backend(&cli.visual_backend)?;
+                commands::visual::apps_split(
+                    backend.as_ref(),
+                    out_dir,
+                    seconds,
+                    fps,
+                    pid,
+                    name,
+                    all_active,
+                )?;
             }
         },
         Commands::Record { command } => match command {
-            RecordCommands::Run {
+            RecordCommands::System {
                 audio_out,
                 visual_out,
                 seconds,
@@ -250,6 +283,52 @@ fn main() -> Result<()> {
                 no_prefer_loopback,
                 fps,
                 display,
+            )?,
+            RecordCommands::App {
+                audio_out,
+                visual_out,
+                seconds,
+                sample_rate,
+                channels,
+                fps,
+                pid,
+                name,
+            } => commands::record::run_app(
+                &cli.audio_backend,
+                &cli.visual_backend,
+                audio_out,
+                visual_out,
+                seconds,
+                sample_rate,
+                channels,
+                fps,
+                pid,
+                name,
+            )?,
+            RecordCommands::AppsSplit {
+                out_dir,
+                seconds,
+                sample_rate,
+                channels,
+                fps,
+                pid,
+                name,
+                all_active,
+                no_audio,
+                no_visual,
+            } => commands::record::run_apps_split(
+                &cli.audio_backend,
+                &cli.visual_backend,
+                out_dir,
+                seconds,
+                sample_rate,
+                channels,
+                fps,
+                pid,
+                name,
+                all_active,
+                no_audio,
+                no_visual,
             )?,
         },
     }

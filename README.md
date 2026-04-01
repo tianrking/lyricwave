@@ -77,7 +77,7 @@ cargo build --workspace --release
 ### Visual (Architecture Ready)
 - visual backend registry and platform routing (`visual` module)
 - display discovery command (`visual displays`)
-- display-frame capture command scaffold (`visual capture-display`) for unified future A/V composition
+- display/system capture command (`visual system`) and app routing entrypoint (`visual app`)
 
 ### Composition (Top-Level Orchestration)
 - unified A/V coordinator (`composition` module) for:
@@ -100,11 +100,18 @@ lyricwave capture apps-list
 lyricwave visual backends
 lyricwave visual displays
 
-# visual capture scaffold command (native implementation in progress)
-lyricwave visual capture-display --out screen.mp4 --seconds 10
+# visual capture
+lyricwave visual system --out screen.mp4 --seconds 10
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
 
-# unified session: audio + visual together
-lyricwave record run --audio-out mic.wav --visual-out screen.mp4 --seconds 10
+# unified session: system A/V
+lyricwave record system --audio-out mic.wav --visual-out screen.mp4 --seconds 10
+
+# unified session: selected app A/V
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+
+# split A/V per app
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
 
 # capture system mix (10s)
 lyricwave capture system --out system.wav --seconds 10

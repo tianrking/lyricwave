@@ -1,4 +1,6 @@
-use crate::visual::{DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError};
+use crate::visual::{
+    ActiveVisualProcessInfo, DisplayInfo, VisualCaptureReport, VisualCaptureRequest, VisualError,
+};
 
 pub fn capability_note() -> &'static str {
     "Linux visual backend scaffold is ready; screen capture implementation will be added via native pipeline (PipeWire/X11/Wayland)."
@@ -12,6 +14,10 @@ pub fn list_displays() -> Result<Vec<DisplayInfo>, VisualError> {
         width: 1920,
         height: 1080,
     }])
+}
+
+pub fn list_active_visual_processes() -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+    Ok(vec![])
 }
 
 pub fn capture_display(

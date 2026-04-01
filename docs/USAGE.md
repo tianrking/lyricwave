@@ -158,34 +158,37 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - App capture uses WASAPI process loopback.
 - The selected process must be actively producing audio while recording.
 
-## 10. Visual Commands (Architecture Scaffold)
+## 10. Visual Commands
 
 ```bash
 lyricwave visual backends
 lyricwave visual displays
-lyricwave visual capture-display --out screen.mp4 --seconds 10
+lyricwave visual system --out screen.mp4 --seconds 10
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
+lyricwave visual apps-list
+lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-active
 ```
 
 Notes:
-- This is the unified visual architecture entrypoint.
-- Native per-OS display recorder implementations are wired by backend platform modules and will be filled incrementally.
+- `visual app` / `visual apps-split` rely on native per-process visual routing and may return NotImplemented depending on OS backend state.
 
 ## 11. Unified Record Session (Audio / Visual / A+V)
 
-Use one command to run audio-only, visual-only, or audio+visual recording.
+Use dedicated commands for system-level and app-level composition.
 
 ```bash
-# audio-only
-lyricwave record run --audio-out system.wav --seconds 10
+# system composition
+lyricwave record system --audio-out system.wav --visual-out system.mp4 --seconds 10
 
-# visual-only
-lyricwave record run --visual-out screen.mp4 --seconds 10
+# app composition (single or multi selectors)
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+lyricwave record app --audio-out apps.wav --visual-out apps.mp4 --name "Chrome" --name "Music" --seconds 10
 
-# audio + visual together
-lyricwave record run --audio-out system.wav --visual-out screen.mp4 --seconds 10
+# split composition (one app => one audio + one visual file)
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
 
-# manual stop (no --seconds): press Enter or Ctrl+C
-lyricwave record run --audio-out system.wav --visual-out screen.mp4
+# manual stop (when command supports omitted --seconds): press Enter or Ctrl+C
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome"
 ```
 
 Key options:
@@ -193,11 +196,16 @@ Key options:
 ```bash
 --audio-out <FILE>
 --visual-out <FILE>
---seconds <N>            # optional, omit for manual stop
+--seconds <N>            # optional for `record app/system`, required for apps-split
 --sample-rate <HZ>       # audio
 --channels <N>           # audio
 --input-device <HINT>    # audio
 --no-prefer-loopback     # audio
 --fps <N>                # visual
 --display <HINT>         # visual
+--pid <PID>              # app/apps-split selector, repeatable
+--name <TEXT>            # app/apps-split selector, repeatable
+--all-active             # apps-split selector source
+--no-audio               # apps-split only
+--no-visual              # apps-split only
 ```

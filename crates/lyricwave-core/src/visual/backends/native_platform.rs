@@ -1,6 +1,6 @@
 use crate::visual::{
-    DisplayInfo, VisualBackend, VisualBackendCapabilities, VisualCaptureReport,
-    VisualCaptureRequest, VisualError,
+    ActiveVisualProcessInfo, DisplayInfo, VisualBackend, VisualBackendCapabilities,
+    VisualCaptureReport, VisualCaptureRequest, VisualError,
 };
 
 use super::platform;
@@ -28,12 +28,17 @@ impl VisualBackend for NativePlatformVisualBackend {
         VisualBackendCapabilities {
             screen_capture: true,
             window_capture: false,
+            per_app_capture: false,
             note: platform::capability_note(),
         }
     }
 
     fn list_displays(&self) -> Result<Vec<DisplayInfo>, VisualError> {
         platform::list_displays()
+    }
+
+    fn list_active_visual_processes(&self) -> Result<Vec<ActiveVisualProcessInfo>, VisualError> {
+        platform::list_active_visual_processes()
     }
 
     fn capture_blocking(
