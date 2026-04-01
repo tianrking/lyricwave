@@ -97,6 +97,7 @@ pub fn run_once(
     target_lang: &str,
     translator_provider: &str,
     input_device: Option<String>,
+    prefer_loopback: bool,
     sample_rate: Option<u32>,
     channels: Option<u16>,
 ) -> Result<()> {
@@ -125,6 +126,7 @@ pub fn run_once(
         channels,
         CaptureFormat::Wav,
         input_device,
+        prefer_loopback,
     )?;
 
     let source_text = asr
@@ -140,7 +142,15 @@ pub fn run_once(
         "capture": {
             "samples": capture_report.captured_samples,
             "sample_rate": capture_report.sample_rate,
-            "channels": capture_report.channels
+            "channels": capture_report.channels,
+            "selected_input_device": {
+                "id": capture_report.selected_input_device.id,
+                "name": capture_report.selected_input_device.name,
+                "is_default": capture_report.selected_input_device.is_default,
+                "loopback_score": capture_report.selected_input_device.loopback_score,
+                "is_loopback_candidate": capture_report.selected_input_device.is_loopback_candidate
+            },
+            "selection_reason": capture_report.selection_reason
         },
         "asr_provider": asr.name(),
         "translator_provider": translator.name(),

@@ -66,7 +66,7 @@ pub enum BackendCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum DeviceCommands {
-    /// List output devices
+    /// List output/input devices
     List,
 }
 
@@ -101,6 +101,9 @@ pub enum CaptureCommands {
         /// Platform input hint (macOS e.g. :0, Linux monitor source, Windows endpoint name).
         #[arg(long)]
         input_device: Option<String>,
+        /// Disable loopback-first auto selection.
+        #[arg(long, default_value_t = false)]
+        no_prefer_loopback: bool,
     },
 }
 
@@ -170,6 +173,9 @@ pub enum PipelineCommands {
         /// Optional input device hint for capture backend.
         #[arg(long)]
         input_device: Option<String>,
+        /// Disable loopback-first auto selection.
+        #[arg(long, default_value_t = false)]
+        no_prefer_loopback: bool,
         #[arg(long)]
         sample_rate: Option<u32>,
         #[arg(long)]

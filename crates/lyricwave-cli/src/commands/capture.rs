@@ -18,6 +18,7 @@ pub fn system(
     channels: Option<u16>,
     format: CaptureFormat,
     input_device: Option<String>,
+    prefer_loopback: bool,
 ) -> Result<CaptureReport> {
     let stop_flag = if seconds.is_none() {
         let flag = Arc::new(AtomicBool::new(false));
@@ -55,6 +56,7 @@ pub fn system(
         channels,
         format,
         input_device_hint: input_device,
+        prefer_loopback,
         stop_flag,
     };
     Ok(backend.capture_blocking(&request)?)

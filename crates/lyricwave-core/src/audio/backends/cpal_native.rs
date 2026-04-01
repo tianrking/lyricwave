@@ -5,9 +5,10 @@ use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
+use crate::audio::selection::select_input_device;
 use crate::audio::{
     AudioBackend, AudioError, BackendCapabilities, CaptureFormat, CaptureReport, CaptureRequest,
-    CaptureTarget, DeviceInfo,
+    CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
 };
 
 use super::platform;
@@ -39,7 +40,7 @@ impl AudioBackend for CpalNativeBackend {
         }
     }
 
-    fn list_output_devices(&self) -> Result<Vec<DeviceInfo>, AudioError> {
+    fn list_output_devices(&self) -> Result<Vec<OutputDeviceInfo>, AudioError> {
         let host = cpal::default_host();
         let default_name = host
             .default_output_device()
@@ -54,10 +55,10 @@ impl AudioBackend for CpalNativeBackend {
         {
             let name = device
                 .name()
-                .unwrap_or_else(|_| format!("unknown-device-{idx}"));
-            devices.push(DeviceInfo {
+                .unwrap_or_else(|_| format!("unknown-output-device-{idx}"));
+            devices.push(OutputDeviceInfo {
                 id: format!("cpal-output-{idx}"),
-                is_default_output: name == default_name,
+                is_default: name == default_name,
                 name,
             });
         }
@@ -65,22 +66,41 @@ impl AudioBackend for CpalNativeBackend {
         Ok(devices)
     }
 
+    fn list_input_devices(&self) -> Result<Vec<InputDeviceInfo>, AudioError> {
+        list_input_devices_with_host(&cpal::default_host())
+    }
+
     fn capture_blocking(&self, request: &CaptureRequest) -> Result<CaptureReport, AudioError> {
         let host = cpal::default_host();
-        let device = select_input_device(&host, request.input_device_hint.as_deref())?;
+        let inputs = list_input_devices_with_host(&host)?;
+        let selected = select_input_device(
+            &inputs,
+            request.input_device_hint.as_deref(),
+            request.prefer_loopback,
+        )
+        .ok_or_else(|| {
+            AudioError::Message(
+                "no input device found; configure a loopback-capable input first".to_string(),
+            )
+        })?;
+
+        let device = find_input_device_by_name(&host, &selected.info.name)?;
 
         let config = device
             .default_input_config()
             .map_err(|e| AudioError::Message(format!("failed to get default input config: {e}")))?;
-        let sample_rate = config.sample_rate().0;
-        let channels = config.channels();
+
+        let sample_rate = request.sample_rate.unwrap_or(config.sample_rate().0);
+        let channels = request.channels.unwrap_or(config.channels());
         let stop_flag = request.stop_flag.clone();
 
         let captured = Arc::new(Mutex::new(Vec::<f32>::new()));
         let captured_clone = Arc::clone(&captured);
 
         let err_fn = |err| eprintln!("audio stream error: {err}");
-        let stream_config: cpal::StreamConfig = config.clone().into();
+        let mut stream_config: cpal::StreamConfig = config.clone().into();
+        stream_config.sample_rate = cpal::SampleRate(sample_rate);
+        stream_config.channels = channels;
 
         let stream = match config.sample_format() {
             cpal::SampleFormat::F32 => device
@@ -174,30 +194,52 @@ impl AudioBackend for CpalNativeBackend {
             captured_samples: samples.len(),
             sample_rate,
             channels,
+            selected_input_device: selected.info,
+            selection_reason: selected.reason,
         })
     }
 }
 
-fn select_input_device(host: &cpal::Host, hint: Option<&str>) -> Result<cpal::Device, AudioError> {
-    if let Some(hint_text) = hint {
-        let query = hint_text.to_lowercase();
-        let mut devices = host
-            .input_devices()
-            .map_err(|e| AudioError::Message(format!("failed to list input devices: {e}")))?;
-        if let Some(device) = devices.find(|d| {
-            d.name()
-                .map(|n| n.to_lowercase().contains(&query))
-                .unwrap_or(false)
-        }) {
-            return Ok(device);
-        }
+fn list_input_devices_with_host(host: &cpal::Host) -> Result<Vec<InputDeviceInfo>, AudioError> {
+    let default_name = host
+        .default_input_device()
+        .and_then(|d| d.name().ok())
+        .unwrap_or_default();
+
+    let mut devices = Vec::new();
+    for (idx, device) in host
+        .input_devices()
+        .map_err(|e| AudioError::Message(format!("failed to read input devices: {e}")))?
+        .enumerate()
+    {
+        let name = device
+            .name()
+            .unwrap_or_else(|_| format!("unknown-input-device-{idx}"));
+        let score = crate::audio::selection::loopback_score(&name);
+        devices.push(InputDeviceInfo {
+            id: format!("cpal-input-{idx}"),
+            is_default: name == default_name,
+            is_loopback_candidate: score > 0,
+            loopback_score: score,
+            name,
+        });
     }
 
-    host.default_input_device().ok_or_else(|| {
-        AudioError::Message(
-            "no default input device found; configure loopback-capable input first".to_string(),
-        )
-    })
+    Ok(devices)
+}
+
+fn find_input_device_by_name(
+    host: &cpal::Host,
+    wanted_name: &str,
+) -> Result<cpal::Device, AudioError> {
+    host.input_devices()
+        .map_err(|e| AudioError::Message(format!("failed to list input devices: {e}")))?
+        .find(|device| device.name().ok().as_deref() == Some(wanted_name))
+        .ok_or_else(|| {
+            AudioError::Message(format!(
+                "selected input device '{wanted_name}' is no longer available"
+            ))
+        })
 }
 
 fn write_capture_output(

@@ -37,6 +37,7 @@ fn main() -> Result<()> {
                     channels,
                     format,
                     input_device,
+                    no_prefer_loopback,
                 } => {
                     let report = commands::capture::system(
                         backend.as_ref(),
@@ -47,10 +48,15 @@ fn main() -> Result<()> {
                         channels,
                         format.into(),
                         input_device,
+                        !no_prefer_loopback,
                     )?;
                     eprintln!(
-                        "captured {} samples @ {}Hz ({} channels)",
-                        report.captured_samples, report.sample_rate, report.channels
+                        "captured {} samples @ {}Hz ({} channels), input='{}', reason={}",
+                        report.captured_samples,
+                        report.sample_rate,
+                        report.channels,
+                        report.selected_input_device.name,
+                        report.selection_reason
                     );
                 }
             }
@@ -102,6 +108,7 @@ fn main() -> Result<()> {
                 target_lang,
                 translator_provider,
                 input_device,
+                no_prefer_loopback,
                 sample_rate,
                 channels,
             } => {
@@ -119,6 +126,7 @@ fn main() -> Result<()> {
                     &target_lang,
                     &translator_provider,
                     input_device,
+                    !no_prefer_loopback,
                     sample_rate,
                     channels,
                 )?

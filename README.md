@@ -13,9 +13,10 @@
 
 ### Audio / Capture
 
-- [x] List output devices
+- [x] List output + input devices
 - [x] Build system capture command templates for macOS/Linux/Windows
 - [x] Capture to WAV
+- [x] Auto-select input by strategy: `hint > loopback > default > first`
 - [ ] Native FLAC output
 - [x] Stream raw PCM to stdout
 - [x] Select audio backend by id (`--audio-backend`)
@@ -89,6 +90,12 @@ cargo run -p lyricwave-cli -- --audio-backend cpal-native devices list
 # Capture system audio to file (native CPAL path)
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
 
+# Capture with explicit input-device hint
+cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --input-device "BlackHole"
+
+# Disable loopback-first selection (fallback to default/first unless hint matches)
+cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --no-prefer-loopback
+
 # Manual stop recording (press Enter or Ctrl+C to stop)
 cargo run -p lyricwave-cli -- capture system --out out.wav
 
@@ -100,6 +107,14 @@ cargo run -p lyricwave-cli -- pipeline run-once \
   --python-bin python \
   --target-lang zh \
   --translator-provider mock
+
+# run-once also supports device hint/selection policy
+cargo run -p lyricwave-cli -- pipeline run-once \
+  --seconds 8 \
+  --input-device "Stereo Mix" \
+  --no-prefer-loopback \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice
 
 # Daemon JSON stream
 cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
@@ -133,6 +148,7 @@ cargo run -p lyricwave-cli -- daemon serve --host 127.0.0.1 --port 7878 --target
   - `audio`
     - backend trait + backend registry
     - `audio/backends/` one backend per file
+    - `audio/selection/` input selection strategy and loopback scoring
     - `audio/backends/platform/` OS strategy modules
   - `pipeline`
     - event schema + event hub + traits
