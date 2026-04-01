@@ -1,292 +1,131 @@
 # lyricwave
 
-`lyricwave` is a Rust-first CLI for cross-platform system audio capture with ASR + translation pipeline primitives and overlay-ready event streaming.
+<p align="center">
+  <img src="https://img.shields.io/badge/Rust-2024%20Edition-black?logo=rust" alt="Rust" />
+  <img src="https://img.shields.io/badge/CLI-Cross%20Platform-1f6feb" alt="CLI" />
+  <img src="https://img.shields.io/github/actions/workflow/status/tianrking/lyricwave/ci.yml?branch=main&label=CI" alt="CI" />
+  <img src="https://img.shields.io/github/actions/workflow/status/tianrking/lyricwave/release.yml?branch=main&label=Release" alt="Release" />
+  <img src="https://img.shields.io/github/v/release/tianrking/lyricwave" alt="Latest Release" />
+  <img src="https://img.shields.io/github/license/tianrking/lyricwave" alt="License" />
+</p>
 
-## Project Status
+Cross-platform audio capture CLI for:
+- system mix capture
+- per-app capture (single/multiple)
+- split per-app WAV export
+- ASR + translation pipeline integration
 
-- Architecture: modular and extensible (`audio/backends` + `pipeline/providers`)
-- Core offline workflow: implemented (`capture -> asr -> translate`)
-- Cross-platform code paths: macOS / Linux / Windows implemented
-- Cross-platform CI: enabled (GitHub Actions matrix)
+Language:
+- English (this file)
+- [简体中文 README](./README.zh-CN.md)
 
-## Feature Matrix (Current)
+## Download And Use (Recommended)
 
-### Audio / Capture
+Get prebuilt binaries from [Releases](https://github.com/tianrking/lyricwave/releases):
 
-- [x] List output + input devices
-- [x] Build system capture command templates for macOS/Linux/Windows
-- [x] Capture to WAV
-- [x] Auto-select input by strategy: `hint > loopback > default > first`
-- [ ] Native FLAC output
-- [x] Stream raw PCM to stdout
-- [x] Select audio backend by id (`--audio-backend`)
-- [x] Per-app/process capture on Linux (PulseAudio/PipeWire: single/multi app)
-- [x] Per-app/process capture on macOS (ScreenCaptureKit: single/multi app, requires `--seconds`)
-- [x] Per-app/process capture on Windows (WASAPI process loopback: single/multi app)
-- [x] List active/candidate app processes for app capture (`capture apps-list`)
-- [x] Split capture: export independent WAV per selected app (`capture apps-split`)
-- [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
+- Linux: `.tar.gz` for `x86_64/i686/aarch64/armv7` + `.deb` for `x86_64`
+- macOS: `.tar.gz` for Intel + Apple Silicon
+- Windows: `.zip` with `lyricwave.exe` for `x86_64/i686`
 
-### ASR / Translation
+Then run:
 
-- [x] Provider registry (directory-based, pluggable)
-- [x] Offline external VibeVoice file ASR provider
-- [x] Translator providers: `mock`, `passthrough`, `deepl`, `libretranslate`
-- [x] One-shot offline main flow (`pipeline run-once`)
-- [ ] Online ASR providers (OpenAI/Deepgram) runtime implementation
-- [ ] Streaming ASR in daemon mode
+```bash
+lyricwave --help
+```
 
-### Daemon / Integration
+Detailed CLI usage:
+- [Usage Guide (English)](./docs/USAGE.md)
+- [使用手册（中文）](./docs/USAGE.zh-CN.md)
 
-- [x] JSONL event output (`daemon run`)
-- [x] TCP JSONL event stream (`daemon serve`)
-- [ ] WebSocket transport
-- [ ] macOS floating overlay UI client
+## Build From Source
+
+```bash
+cargo build --workspace --release
+```
 
 ## Platform Support
 
-Code-level support is implemented for all major desktop OS audio stacks via backend templates:
+| Capability | macOS | Linux | Windows |
+|---|---|---|---|
+| System mix capture (`capture system`) | Yes (loopback input/device required) | Yes (loopback/monitor input may be required) | Yes |
+| Per-app capture (`capture app`) | Yes (ScreenCaptureKit, requires Screen Recording permission) | Yes (PulseAudio/PipeWire) | Yes (WASAPI process loopback) |
+| Active app discovery (`capture apps-list`) | Yes (capture candidates from ScreenCaptureKit) | Yes (active sink-input processes) | Yes (active WASAPI session processes) |
+| Split per-app WAV (`capture apps-split`) | Yes | Yes | Yes |
 
-- macOS: `avfoundation` input template (loopback-capable device required)
-- Linux: `pulse` input template (PulseAudio/PipeWire monitor may be required)
-- Windows: `wasapi` input template
+## Feature Snapshot
 
-Notes:
+### Audio
+- device list + capability inspect
+- auto input selection strategy: `hint > loopback > default > first`
+- system capture to WAV / stdout PCM
+- app capture (single or multiple selectors)
+- split capture to independent per-process WAV files
+- optional merged mix output from split files
 
-- macOS has been the primary local runtime environment during development.
-- Linux/Windows are covered by code paths and CI builds, but real-device behavioral validation is still recommended per environment.
+### Pipeline
+- pluggable provider registry
+- offline VibeVoice file ASR integration (external repo)
+- translators: `mock`, `passthrough`, `deepl`, `libretranslate`
+- one-shot pipeline command (`pipeline run-once`)
 
-## Installation
+### Daemon
+- JSONL event output (`daemon run`)
+- TCP JSONL streaming (`daemon serve`)
 
-### Prerequisites
-
-- Rust stable toolchain
-- Optional for offline ASR:
-  - local checkout of `microsoft/VibeVoice`
-  - Python environment that can run VibeVoice ASR script
-
-### Build
-
-```bash
-cargo build --workspace
-```
-
-### Quick Validation
-
-```bash
-cargo run -p lyricwave-cli -- backends list
-cargo run -p lyricwave-cli -- providers list
-cargo run -p lyricwave-cli -- devices list
-```
-
-## Core Commands
+## Quick CLI Examples
 
 ```bash
-# Audio backend catalog
-cargo run -p lyricwave-cli -- backends list
+# list backends/providers/devices
+lyricwave backends list
+lyricwave providers list
+lyricwave devices list
 
-# Provider catalog
-cargo run -p lyricwave-cli -- providers list
+# list current active/candidate app processes
+lyricwave capture apps-list
 
-# Explicit backend selection
-cargo run -p lyricwave-cli -- --audio-backend cpal-native devices list
+# capture system mix (10s)
+lyricwave capture system --out system.wav --seconds 10
 
-# Capture system audio to file (native CPAL path)
-cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
+# capture one app by name
+lyricwave capture app --out chrome.wav --name "Google Chrome" --seconds 10
 
-# Capture one app by pid
-cargo run -p lyricwave-cli -- capture app --out app.wav --pid 12345 --seconds 10
+# capture multiple apps into one mixed file
+lyricwave capture app --out apps.wav --name "Google Chrome" --name "Music" --seconds 10
 
-# Capture multiple apps by pid/name (single and multiple are the same command)
-cargo run -p lyricwave-cli -- capture app --out apps.wav --pid 12345 --name chrome --name spotify
-
-# List active/candidate app processes
-cargo run -p lyricwave-cli -- capture apps-list
-
-# Split capture to independent files (one wav per process), with optional mixed wav
-cargo run -p lyricwave-cli -- capture apps-split \
+# split capture: one file per app + optional merged mix
+lyricwave capture apps-split \
   --out-dir /tmp/lyricwave-split \
   --seconds 10 \
   --name "Google Chrome" \
   --name "Music" \
   --mix-out /tmp/lyricwave-mix.wav
-
-# Capture all active audio processes into separate files
-cargo run -p lyricwave-cli -- capture apps-split \
-  --out-dir /tmp/lyricwave-all \
-  --seconds 8 \
-  --all-active
-
-# Capture with explicit input-device hint
-cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --input-device "BlackHole"
-
-# Disable loopback-first selection (fallback to default/first unless hint matches)
-cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --no-prefer-loopback
-
-# Manual stop recording (press Enter or Ctrl+C to stop)
-cargo run -p lyricwave-cli -- capture system --out out.wav
-
-# Main one-shot workflow: capture -> ASR -> translate -> JSON
-cargo run -p lyricwave-cli -- pipeline run-once \
-  --seconds 8 \
-  --asr-provider vibevoice \
-  --vibevoice-dir /absolute/path/to/VibeVoice \
-  --python-bin python \
-  --target-lang zh \
-  --translator-provider mock
-
-# run-once also supports device hint/selection policy
-cargo run -p lyricwave-cli -- pipeline run-once \
-  --seconds 8 \
-  --input-device "Stereo Mix" \
-  --no-prefer-loopback \
-  --asr-provider vibevoice \
-  --vibevoice-dir /absolute/path/to/VibeVoice
-
-# Daemon JSON stream
-cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
-
-# Daemon TCP JSONL stream
-cargo run -p lyricwave-cli -- daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ```
 
-## Provider Configuration
+## CI And Release
 
-### DeepL
-
-- `DEEPL_API_KEY` (required)
-- `DEEPL_BASE_URL` (optional, default: `https://api-free.deepl.com`)
-
-### LibreTranslate
-
-- `LIBRETRANSLATE_BASE_URL` (optional, default: `http://127.0.0.1:5000`)
-- `LIBRETRANSLATE_API_KEY` (optional)
-
-### VibeVoice ASR (external mode)
-
-- `lyricwave` does not vendor `microsoft/VibeVoice` source code.
-- Provide local path via `--vibevoice-dir`.
-- Invoked entrypoint:
-  - `python demo/vibevoice_asr_inference_from_file.py --model_path ... --audio_files ...`
+- CI workflow: `.github/workflows/ci.yml`
+- Release workflow: `.github/workflows/release.yml`
+- Tag release trigger: push `v*` tag (example: `v0.1.0`)
 
 ## Architecture
 
 - `crates/lyricwave-core`
-  - `audio`
-    - backend trait + backend registry
-    - `audio/backends/` one backend per file
-    - `audio/selection/` input selection strategy and loopback scoring
-    - `audio/backends/platform/` OS strategy modules
-  - `pipeline`
-    - event schema + event hub + traits
-    - `pipeline/providers/` one provider per file + central registry
-  - `service`
-    - orchestration layer combining ASR + translation + events
+  - `audio`: backend traits, platform implementations, selection strategy
+  - `pipeline`: provider abstractions/registry/events
+  - `service`: orchestration layer
 - `crates/lyricwave-cli`
-  - `cli.rs`: command definitions
-  - `commands/*`: command handlers by domain
-  - `main.rs`: thin dispatcher
-
-## CI
-
-Workflow file:
-
-- `.github/workflows/ci.yml`
-
-CI runs on push/PR to `main` and includes:
-
-- `cargo fmt --all -- --check`
-- `cargo clippy --workspace --all-targets`
-- `cargo check --workspace`
-- `cargo test --workspace`
-
-Matrix:
-
-- `ubuntu-latest`
-- `macos-latest`
-- `windows-latest`
-
-Additional architecture smoke checks:
-
-- `x86_64-unknown-linux-gnu` (required)
-- `i686-unknown-linux-gnu` (experimental, non-blocking)
-- `aarch64-unknown-linux-gnu` (experimental, non-blocking)
-- `armv7-unknown-linux-gnueabihf` (experimental, non-blocking)
-
-## Release Packaging
-
-Release workflow file:
-
-- `.github/workflows/release.yml`
-
-Trigger:
-
-- Push tag `v*` (for example: `v0.1.0`)
-- Or manual `workflow_dispatch` with tag input
-
-Release artifacts:
-
-- Linux:
-  - `x86_64-unknown-linux-gnu`: `.tar.gz` + `.deb`
-  - `i686-unknown-linux-gnu`: `.tar.gz`
-  - `aarch64-unknown-linux-gnu`: `.tar.gz`
-  - `armv7-unknown-linux-gnueabihf`: `.tar.gz`
-- macOS:
-  - `x86_64-apple-darwin`: `.tar.gz`
-  - `aarch64-apple-darwin`: `.tar.gz`
-- Windows:
-  - `x86_64-pc-windows-msvc`: `.zip` (contains `.exe`)
-  - `i686-pc-windows-msvc`: `.zip` (contains `.exe`)
-
-Each release also includes `SHA256SUMS.txt`.
+  - `cli.rs`: command model
+  - `commands/*`: command handlers
+  - `main.rs`: dispatcher
 
 ## Troubleshooting
 
-### `capture` fails on macOS with no usable input
+### macOS `capture app` fails with `SCStreamErrorDomain -3801`
+Enable `Screen Recording` permission for Terminal/host app:
+- `System Settings -> Privacy & Security -> Screen Recording`
 
-Install/configure a loopback-capable virtual audio device and pass correct input selector/device hint.
+### Linux `capture app` fails
+Check `pactl` / `parecord` availability and whether target app currently has active sink-input audio.
 
-### `capture app` fails on macOS
-
-Check:
-
-- System Settings -> Privacy & Security -> Screen Recording: allow terminal/app
-- run command with `--seconds` (current macOS helper requires fixed duration)
-- target app is running and matches `--pid` / `--name`
-
-### `apps-list` shows many entries on macOS
-
-`apps-list` on macOS is based on ScreenCaptureKit shareable applications (capture candidates).
-Use `--name` / `--pid` to narrow target apps for recording.
-
-### `capture app` fails on Linux
-
-Check:
-
-- PulseAudio/PipeWire user tools installed (`pactl`, `parecord`)
-- target app is currently playing audio (has active `sink-input`)
-- selectors are valid (`--pid` and/or `--name`)
-
-### `capture app` fails on Windows
-
-Check:
-
-- target process is actively producing audio during recording
-- selector is valid (`--pid` and/or `--name`)
-- app is not fully silent/muted and not blocked by enterprise endpoint policy
-
-### `pipeline asr-file` fails for vibevoice
-
-Check:
-
-- `--vibevoice-dir` points to valid VibeVoice checkout
-- Python env has required dependencies
-- `--model-path` matches installed/available model
-
-### `deepl` provider says missing key
-
-Set `DEEPL_API_KEY` in your shell before running command.
-
-### `libretranslate` returns HTTP error
-
-Check `LIBRETRANSLATE_BASE_URL` and whether your server/public endpoint requires API key.
+### Windows `capture app` gets empty output
+Ensure the selected process is actively producing audio during recording and is not muted.
