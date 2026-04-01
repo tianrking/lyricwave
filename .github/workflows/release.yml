@@ -116,15 +116,13 @@ jobs:
   build-macos:
     name: build macos / ${{ matrix.target }}
     needs: resolve-tag
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
-            target: x86_64-apple-darwin
-          - os: macos-14
-            target: aarch64-apple-darwin
+          - target: x86_64-apple-darwin
+          - target: aarch64-apple-darwin
 
     steps:
       - name: Checkout
