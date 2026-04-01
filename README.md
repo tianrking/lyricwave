@@ -22,7 +22,7 @@
 - [x] Select audio backend by id (`--audio-backend`)
 - [x] Per-app/process capture on Linux (PulseAudio/PipeWire: single/multi app)
 - [x] Per-app/process capture on macOS (ScreenCaptureKit: single/multi app, requires `--seconds`)
-- [ ] Per-app/process capture on Windows
+- [x] Per-app/process capture on Windows (WASAPI process loopback: single/multi app)
 - [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
 
 ### ASR / Translation
@@ -242,6 +242,14 @@ Check:
 - PulseAudio/PipeWire user tools installed (`pactl`, `parecord`)
 - target app is currently playing audio (has active `sink-input`)
 - selectors are valid (`--pid` and/or `--name`)
+
+### `capture app` fails on Windows
+
+Check:
+
+- target process is actively producing audio during recording
+- selector is valid (`--pid` and/or `--name`)
+- app is not fully silent/muted and not blocked by enterprise endpoint policy
 
 ### `pipeline asr-file` fails for vibevoice
 
