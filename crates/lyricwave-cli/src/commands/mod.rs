@@ -4,3 +4,4 @@ pub mod daemon;
 pub mod devices;
 pub mod pipeline;
 pub mod providers;
+pub mod video;

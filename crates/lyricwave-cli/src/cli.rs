@@ -13,6 +13,9 @@ pub struct Cli {
     /// Audio backend id used for capture/device commands.
     #[arg(long, global = true, default_value = "cpal-native")]
     pub audio_backend: String,
+    /// Video backend id used for video commands.
+    #[arg(long, global = true, default_value = "platform-native")]
+    pub video_backend: String,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -49,6 +52,11 @@ pub enum Commands {
     Daemon {
         #[command(subcommand)]
         command: DaemonCommands,
+    },
+    /// Video backend/device/capture commands
+    Video {
+        #[command(subcommand)]
+        command: VideoCommands,
     },
 }
 
@@ -270,6 +278,29 @@ pub enum DaemonCommands {
         target_lang: String,
         #[arg(long, default_value_t = 1000)]
         interval_ms: u64,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum VideoCommands {
+    /// List video backend catalog
+    Backends,
+    /// List available displays
+    Displays,
+    /// Capture display/screen to a file (scaffold command)
+    CaptureScreen {
+        /// Output file path (recommended extension: .mp4 or .mkv)
+        #[arg(long)]
+        out: PathBuf,
+        /// Capture duration in seconds. Omit for manual stop.
+        #[arg(long)]
+        seconds: Option<u32>,
+        /// Target frames per second.
+        #[arg(long)]
+        fps: Option<u32>,
+        /// Optional display hint.
+        #[arg(long)]
+        display: Option<String>,
     },
 }
 

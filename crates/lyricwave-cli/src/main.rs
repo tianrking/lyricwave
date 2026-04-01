@@ -7,7 +7,7 @@ use lyricwave_core::audio::build_audio_backend;
 
 use crate::cli::{
     BackendCommands, CaptureCommands, Cli, Commands, DaemonCommands, DeviceCommands,
-    PipelineCommands, ProviderCommands,
+    PipelineCommands, ProviderCommands, VideoCommands,
 };
 
 fn main() -> Result<()> {
@@ -209,6 +209,22 @@ fn main() -> Result<()> {
                     &target_lang,
                     interval_ms,
                 ))?;
+            }
+        },
+        Commands::Video { command } => match command {
+            VideoCommands::Backends => commands::video::list_backends(),
+            VideoCommands::Displays => {
+                let backend = commands::video::build_backend(&cli.video_backend)?;
+                commands::video::list_displays(backend.as_ref())?;
+            }
+            VideoCommands::CaptureScreen {
+                out,
+                seconds,
+                fps,
+                display,
+            } => {
+                let backend = commands::video::build_backend(&cli.video_backend)?;
+                commands::video::capture_screen(backend.as_ref(), out, seconds, fps, display)?;
             }
         },
     }

@@ -72,6 +72,11 @@ cargo build --workspace --release
 - JSONL event output (`daemon run`)
 - TCP JSONL streaming (`daemon serve`)
 
+### Video (Architecture Ready)
+- video backend registry and platform routing (`video` module)
+- display discovery command (`video displays`)
+- screen capture command scaffold (`video capture-screen`) for unified future A/V orchestration
+
 ## Quick CLI Examples
 
 ```bash
@@ -82,6 +87,13 @@ lyricwave devices list
 
 # list current active/candidate app processes
 lyricwave capture apps-list
+
+# video backend and display discovery
+lyricwave video backends
+lyricwave video displays
+
+# video capture scaffold command (native implementation in progress)
+lyricwave video capture-screen --out screen.mp4 --seconds 10
 
 # capture system mix (10s)
 lyricwave capture system --out system.wav --seconds 10

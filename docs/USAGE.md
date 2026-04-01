@@ -156,3 +156,15 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ### Windows
 - App capture uses WASAPI process loopback.
 - The selected process must be actively producing audio while recording.
+
+## 10. Video Commands (Architecture Scaffold)
+
+```bash
+lyricwave video backends
+lyricwave video displays
+lyricwave video capture-screen --out screen.mp4 --seconds 10
+```
+
+Notes:
+- This is the unified video architecture entrypoint.
+- Native per-OS screen recorder implementations are wired by backend platform modules and will be filled incrementally.

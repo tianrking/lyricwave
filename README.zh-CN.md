@@ -63,6 +63,13 @@ lyricwave devices list
 # 查看当前活跃/候选音频应用
 lyricwave capture apps-list
 
+# 查看 video 后端与显示器
+lyricwave video backends
+lyricwave video displays
+
+# video 录屏命令骨架（原生实现正在完善中）
+lyricwave video capture-screen --out screen.mp4 --seconds 10
+
 # 录制系统混音（10秒）
 lyricwave capture system --out system.wav --seconds 10
 

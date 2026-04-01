@@ -156,3 +156,15 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ### Windows
 - 按应用录制使用 WASAPI process loopback。
 - 目标进程必须在录制期间真实发声。
+
+## 10. Video 命令（架构骨架）
+
+```bash
+lyricwave video backends
+lyricwave video displays
+lyricwave video capture-screen --out screen.mp4 --seconds 10
+```
+
+说明：
+- 这是统一的 video 架构入口。
+- 各平台原生录屏实现已经有后端路由，后续会逐步填充。
