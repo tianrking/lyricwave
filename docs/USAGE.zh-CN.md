@@ -16,7 +16,7 @@ cargo build --workspace --release
 
 ```bash
 --audio-backend <ID>
---visual-backend <ID>    # 兼容别名：--video-backend
+--visual-backend <ID>
 ```
 
 当前默认后端为 `cpal-native`。
@@ -169,7 +169,6 @@ lyricwave visual capture-display --out screen.mp4 --seconds 10
 说明：
 - 这是统一的 visual 架构入口。
 - 各平台原生录屏实现已经有后端路由，后续会逐步填充。
-- 兼容旧别名：`lyricwave video ...` 与 `capture-screen` 仍可使用。
 
 ## 11. 统一录制会话（音频 / 画面 / 音画联合）
 
@@ -193,7 +192,7 @@ lyricwave record run --audio-out system.wav --visual-out screen.mp4
 
 ```bash
 --audio-out <FILE>
---visual-out <FILE>      # 兼容别名：--video-out
+--visual-out <FILE>
 --seconds <N>            # 可选，不传即手动停止
 --sample-rate <HZ>       # 音频
 --channels <N>           # 音频

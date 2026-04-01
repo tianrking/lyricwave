@@ -16,7 +16,6 @@ pub struct Cli {
     /// Visual backend id used for visual commands.
     #[arg(
         long = "visual-backend",
-        alias = "video-backend",
         global = true,
         default_value = "platform-native"
     )]
@@ -59,7 +58,6 @@ pub enum Commands {
         command: DaemonCommands,
     },
     /// Visual backend/device/capture commands
-    #[command(alias = "video")]
     Visual {
         #[command(subcommand)]
         command: VisualCommands,
@@ -299,7 +297,7 @@ pub enum VisualCommands {
     /// List available displays
     Displays,
     /// Capture display frames to a file (scaffold command).
-    #[command(name = "capture-display", alias = "capture-screen")]
+    #[command(name = "capture-display")]
     CaptureDisplay {
         /// Output file path (recommended extension: .mp4 / .mkv / image stream container)
         #[arg(long)]
@@ -324,7 +322,7 @@ pub enum RecordCommands {
         #[arg(long)]
         audio_out: Option<PathBuf>,
         /// Optional visual output file path.
-        #[arg(long = "visual-out", alias = "video-out")]
+        #[arg(long = "visual-out")]
         visual_out: Option<PathBuf>,
         /// Duration in seconds. Omit for manual stop.
         #[arg(long)]

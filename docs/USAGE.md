@@ -16,7 +16,7 @@ cargo build --workspace --release
 
 ```bash
 --audio-backend <ID>
---visual-backend <ID>    # alias: --video-backend
+--visual-backend <ID>
 ```
 
 Current default is `cpal-native`.
@@ -169,7 +169,6 @@ lyricwave visual capture-display --out screen.mp4 --seconds 10
 Notes:
 - This is the unified visual architecture entrypoint.
 - Native per-OS display recorder implementations are wired by backend platform modules and will be filled incrementally.
-- Backward compatibility: `lyricwave video ...` and `capture-screen` are accepted aliases.
 
 ## 11. Unified Record Session (Audio / Visual / A+V)
 
@@ -193,7 +192,7 @@ Key options:
 
 ```bash
 --audio-out <FILE>
---visual-out <FILE>      # alias: --video-out
+--visual-out <FILE>
 --seconds <N>            # optional, omit for manual stop
 --sample-rate <HZ>       # audio
 --channels <N>           # audio

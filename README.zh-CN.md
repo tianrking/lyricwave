@@ -112,9 +112,6 @@ lyricwave capture apps-split \
   - `commands/*`：各命令处理器
   - `main.rs`：命令分发
 
-兼容性说明：
-- `video` 与 `recording` 仍保留为兼容 re-export 模块名。
-- CLI 兼容旧别名：`video` 命令，以及 `--video-out` / `--video-backend`。
 
 ## 常见问题
 

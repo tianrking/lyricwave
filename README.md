@@ -143,9 +143,6 @@ lyricwave capture apps-split \
   - `commands/*`: command handlers
   - `main.rs`: dispatcher
 
-Compatibility:
-- `video` and `recording` module names are preserved as compatibility re-exports.
-- CLI also accepts legacy aliases: `video` command and `--video-out` / `--video-backend`.
 
 ## Troubleshooting
 
