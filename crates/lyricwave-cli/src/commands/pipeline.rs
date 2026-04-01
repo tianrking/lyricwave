@@ -1,11 +1,16 @@
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
+use lyricwave_core::audio::{AudioBackend, CaptureFormat};
 use lyricwave_core::pipeline::{
     FileAsrBuildContext, MockAsrProvider, MockTranslatorProvider, TranslatorBuildContext,
     build_file_asr, build_text_asr, build_translator,
 };
 use lyricwave_core::service::PipelineService;
+use serde_json::json;
+
+use crate::commands::capture;
 
 pub fn demo(
     text: &str,
@@ -76,4 +81,84 @@ pub fn asr_file(
     println!("source_lang_hint: {source_lang}");
     println!("target_lang: {target_lang}");
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn run_once(
+    backend: &dyn AudioBackend,
+    seconds: u32,
+    audio_out: Option<&PathBuf>,
+    keep_temp_audio: bool,
+    asr_provider: &str,
+    vibevoice_dir: Option<&PathBuf>,
+    model_path: &str,
+    python_bin: &str,
+    source_lang: &str,
+    target_lang: &str,
+    translator_provider: &str,
+    input_device: Option<String>,
+    ffmpeg_bin: String,
+    sample_rate: Option<u32>,
+    channels: Option<u16>,
+) -> Result<()> {
+    let asr = build_file_asr(
+        asr_provider,
+        FileAsrBuildContext {
+            python_bin: python_bin.to_string(),
+            vibevoice_dir: vibevoice_dir.cloned(),
+            model_path: model_path.to_string(),
+        },
+    )
+    .map_err(anyhow::Error::msg)?;
+    let translator = build_translator(translator_provider, TranslatorBuildContext::from_env())
+        .map_err(anyhow::Error::msg)?;
+
+    let explicit_output = audio_out.cloned();
+    let generated_temp = explicit_output.is_none();
+    let capture_path = explicit_output.unwrap_or_else(temp_capture_path);
+
+    capture::system(
+        backend,
+        Some(capture_path.clone()),
+        false,
+        Some(seconds),
+        sample_rate,
+        channels,
+        CaptureFormat::Wav,
+        ffmpeg_bin,
+        input_device,
+    )?;
+
+    let source_text = asr
+        .transcribe_file(&capture_path)
+        .map_err(anyhow::Error::msg)
+        .with_context(|| format!("{} failed for {}", asr.name(), capture_path.display()))?;
+    let translated = translator
+        .translate(&source_text, target_lang)
+        .map_err(anyhow::Error::msg)?;
+
+    let output = json!({
+        "capture_file": capture_path.display().to_string(),
+        "asr_provider": asr.name(),
+        "translator_provider": translator.name(),
+        "source_lang_hint": source_lang,
+        "target_lang": target_lang,
+        "source_text": source_text,
+        "translated_text": translated,
+    });
+    println!("{}", serde_json::to_string_pretty(&output)?);
+
+    if generated_temp && !keep_temp_audio {
+        let _ = std::fs::remove_file(&capture_path);
+    }
+
+    Ok(())
+}
+
+fn temp_capture_path() -> PathBuf {
+    let ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    std::env::temp_dir().join(format!("lyricwave-capture-{ms}.wav"))
 }

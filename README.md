@@ -58,6 +58,15 @@ cargo run -p lyricwave-cli -- pipeline asr-file \
   --target-lang zh \
   --translator-provider mock
 
+# Main one-shot workflow: capture -> ASR -> translate -> JSON
+cargo run -p lyricwave-cli -- pipeline run-once \
+  --seconds 8 \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice \
+  --python-bin python \
+  --target-lang zh \
+  --translator-provider mock
+
 # Daemon JSON stream for overlay integration
 cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
 

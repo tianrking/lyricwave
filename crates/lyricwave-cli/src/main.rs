@@ -86,6 +86,41 @@ fn main() -> Result<()> {
                 &translator_provider,
                 no_translate,
             )?,
+            PipelineCommands::RunOnce {
+                seconds,
+                audio_out,
+                keep_temp_audio,
+                asr_provider,
+                vibevoice_dir,
+                model_path,
+                python_bin,
+                source_lang,
+                target_lang,
+                translator_provider,
+                input_device,
+                ffmpeg_bin,
+                sample_rate,
+                channels,
+            } => {
+                let backend = build_backend(&cli.audio_backend)?;
+                commands::pipeline::run_once(
+                    backend.as_ref(),
+                    seconds,
+                    audio_out.as_ref(),
+                    keep_temp_audio,
+                    &asr_provider,
+                    vibevoice_dir.as_ref(),
+                    &model_path,
+                    &python_bin,
+                    &source_lang,
+                    &target_lang,
+                    &translator_provider,
+                    input_device,
+                    ffmpeg_bin,
+                    sample_rate,
+                    channels,
+                )?
+            }
         },
         Commands::Daemon { command } => match command {
             DaemonCommands::Run {

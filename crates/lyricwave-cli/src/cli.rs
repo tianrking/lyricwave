@@ -144,6 +144,43 @@ pub enum PipelineCommands {
         #[arg(long, default_value_t = false)]
         no_translate: bool,
     },
+    /// End-to-end one-shot flow: capture system audio, transcribe, then translate.
+    RunOnce {
+        /// Capture duration in seconds.
+        #[arg(long, default_value_t = 8)]
+        seconds: u32,
+        /// Optional path to keep captured wav. If omitted, uses temp file.
+        #[arg(long)]
+        audio_out: Option<PathBuf>,
+        /// Keep temp captured file when --audio-out is not provided.
+        #[arg(long, default_value_t = false)]
+        keep_temp_audio: bool,
+        /// ASR file provider id.
+        #[arg(long, default_value = "vibevoice")]
+        asr_provider: String,
+        /// Required for vibevoice provider.
+        #[arg(long)]
+        vibevoice_dir: Option<PathBuf>,
+        #[arg(long, default_value = "microsoft/VibeVoice-ASR")]
+        model_path: String,
+        #[arg(long, default_value = "python")]
+        python_bin: String,
+        #[arg(long, default_value = "auto")]
+        source_lang: String,
+        #[arg(long, default_value = "zh")]
+        target_lang: String,
+        #[arg(long, default_value = "mock")]
+        translator_provider: String,
+        /// Optional input device hint for capture backend.
+        #[arg(long)]
+        input_device: Option<String>,
+        #[arg(long, default_value = "ffmpeg")]
+        ffmpeg_bin: String,
+        #[arg(long)]
+        sample_rate: Option<u32>,
+        #[arg(long)]
+        channels: Option<u16>,
+    },
 }
 
 #[derive(Subcommand, Debug)]
