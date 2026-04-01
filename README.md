@@ -55,11 +55,20 @@ nc 127.0.0.1 7878
 ## Architecture
 
 - `crates/lyricwave-core`
-  - `audio`: backend trait, capability model, capture request, ffmpeg command builder
-  - `pipeline`: event schema, event hub, ASR/translator plugin traits, external VibeVoice adapter
+  - `audio`: backend trait + backend registry
+  - `audio/backends/`: one backend per file + `platform/` OS strategy modules + `registry.rs`
+  - `pipeline`: event schema, event hub, ASR/translator traits
+  - `pipeline/providers/`: one provider per file + central `registry.rs` for descriptor/selection
   - `service`: orchestration layer joining ASR + translation + events
 - `crates/lyricwave-cli`
   - user-facing command interface and process execution
+
+### Provider extension pattern
+
+1. Add a new provider file under `crates/lyricwave-core/src/pipeline/providers/`.
+2. Implement the relevant trait (`AsrEngine`, `AsrFileEngine`, or `Translator`).
+3. Register descriptor + builder entry in `providers/registry.rs`.
+4. The provider automatically becomes visible in `lyricwave providers list`.
 
 ## Platform note
 

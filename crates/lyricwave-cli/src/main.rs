@@ -6,11 +6,12 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use lyricwave_core::audio::{
-    AudioBackend, CaptureFormat, CaptureRequest, CaptureTarget, CpalBackend,
+    AudioBackend, CaptureFormat, CaptureRequest, CaptureTarget, audio_backend_names,
+    default_audio_backend,
 };
 use lyricwave_core::pipeline::{
-    DaemonEvent, asr_file_providers, asr_text_providers, build_file_asr_vibevoice, build_text_asr,
-    build_translator, translator_providers, MockAsrEngine, MockTranslator,
+    DaemonEvent, FileAsrBuildContext, MockAsrProvider, MockTranslatorProvider, asr_file_providers,
+    asr_text_providers, build_file_asr, build_text_asr, build_translator, translator_providers,
 };
 use lyricwave_core::service::PipelineService;
 use tokio::io::AsyncWriteExt;
@@ -58,14 +59,14 @@ enum Commands {
 }
 
 #[derive(Subcommand, Debug)]
-enum DeviceCommands {
-    /// List output devices
+enum ProviderCommands {
+    /// List provider catalog and setup requirements
     List,
 }
 
 #[derive(Subcommand, Debug)]
-enum ProviderCommands {
-    /// List provider catalog and setup requirements
+enum DeviceCommands {
+    /// List output devices
     List,
 }
 
@@ -109,7 +110,7 @@ enum CaptureCommands {
 
 #[derive(Subcommand, Debug)]
 enum PipelineCommands {
-    /// Demo translation pipeline using mock engines.
+    /// Demo translation pipeline using selected providers.
     Demo {
         #[arg(long)]
         text: String,
@@ -122,7 +123,7 @@ enum PipelineCommands {
         #[arg(long, default_value = "mock")]
         translator_provider: String,
     },
-    /// Offline ASR through an external VibeVoice checkout.
+    /// File ASR with provider selection (local or online in future).
     AsrFile {
         #[arg(long)]
         audio: PathBuf,
@@ -190,14 +191,14 @@ impl From<FileFormatArg> for CaptureFormat {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let backend = CpalBackend::new();
+    let backend = default_audio_backend();
 
     match cli.command {
         Commands::Providers { command } => match command {
             ProviderCommands::List => cmd_providers_list(),
         },
         Commands::Devices { command } => match command {
-            DeviceCommands::List => cmd_devices_list(&backend)?,
+            DeviceCommands::List => cmd_devices_list(backend.as_ref())?,
         },
         Commands::Capture { command } => match command {
             CaptureCommands::System {
@@ -210,7 +211,7 @@ fn main() -> Result<()> {
                 ffmpeg_bin,
                 input_device,
             } => cmd_capture_system(
-                &backend,
+                backend.as_ref(),
                 out,
                 stdout,
                 seconds,
@@ -245,7 +246,7 @@ fn main() -> Result<()> {
                 target_lang,
                 translator_provider,
                 no_translate,
-            } => cmd_pipeline_asr_file_vibevoice(
+            } => cmd_pipeline_asr_file(
                 &audio,
                 &asr_provider,
                 vibevoice_dir.as_ref(),
@@ -287,6 +288,34 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn cmd_providers_list() {
+    println!("audio_backends: {}", audio_backend_names().join(", "));
+
+    println!("text_asr:");
+    for p in asr_text_providers() {
+        println!(
+            "- id={} capability={} mode={:?} setup_required={} note={}",
+            p.id, p.capability, p.mode, p.requires_setup, p.note
+        );
+    }
+
+    println!("file_asr:");
+    for p in asr_file_providers() {
+        println!(
+            "- id={} capability={} mode={:?} setup_required={} note={}",
+            p.id, p.capability, p.mode, p.requires_setup, p.note
+        );
+    }
+
+    println!("translator:");
+    for p in translator_providers() {
+        println!(
+            "- id={} capability={} mode={:?} setup_required={} note={}",
+            p.id, p.capability, p.mode, p.requires_setup, p.note
+        );
+    }
+}
+
 fn cmd_devices_list(backend: &dyn AudioBackend) -> Result<()> {
     let devices = backend.list_output_devices()?;
     let caps = backend.capabilities();
@@ -307,32 +336,6 @@ fn cmd_devices_list(backend: &dyn AudioBackend) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn cmd_providers_list() {
-    println!("text_asr:");
-    for p in asr_text_providers() {
-        println!(
-            "- id={} mode={:?} setup_required={} note={}",
-            p.id, p.mode, p.requires_setup, p.note
-        );
-    }
-
-    println!("file_asr:");
-    for p in asr_file_providers() {
-        println!(
-            "- id={} mode={:?} setup_required={} note={}",
-            p.id, p.mode, p.requires_setup, p.note
-        );
-    }
-
-    println!("translator:");
-    for p in translator_providers() {
-        println!(
-            "- id={} mode={:?} setup_required={} note={}",
-            p.id, p.mode, p.requires_setup, p.note
-        );
-    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -391,11 +394,7 @@ fn cmd_pipeline_demo(
     let transcribed = asr.transcribe_text(text);
     let translated = translator.translate(&transcribed, target_lang);
 
-    let service = PipelineService::new(
-        lyricwave_core::pipeline::MockAsrEngine,
-        lyricwave_core::pipeline::MockTranslator,
-        64,
-    );
+    let service = PipelineService::new(MockAsrProvider, MockTranslatorProvider, 64);
     let mut evt = service.process_text(&transcribed, source_lang, target_lang);
     evt.translated_text = Some(translated);
 
@@ -407,7 +406,7 @@ fn cmd_pipeline_demo(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn cmd_pipeline_asr_file_vibevoice(
+fn cmd_pipeline_asr_file(
     audio: &PathBuf,
     asr_provider: &str,
     vibevoice_dir: Option<&PathBuf>,
@@ -418,15 +417,15 @@ fn cmd_pipeline_asr_file_vibevoice(
     translator_provider: &str,
     no_translate: bool,
 ) -> Result<()> {
-    let asr = match asr_provider {
-        "vibevoice" => {
-            let repo_dir = vibevoice_dir
-                .cloned()
-                .context("--vibevoice-dir is required when --asr-provider vibevoice")?;
-            build_file_asr_vibevoice(python_bin.to_string(), repo_dir, model_path.to_string())
-        }
-        _ => anyhow::bail!("unknown file ASR provider: {asr_provider}"),
-    };
+    let asr = build_file_asr(
+        asr_provider,
+        FileAsrBuildContext {
+            python_bin: python_bin.to_string(),
+            vibevoice_dir: vibevoice_dir.cloned(),
+            model_path: model_path.to_string(),
+        },
+    )
+    .map_err(anyhow::Error::msg)?;
 
     let source_text = asr
         .transcribe_file(audio)
@@ -454,7 +453,7 @@ fn cmd_daemon_run(
     interval_ms: u64,
     count: u32,
 ) -> Result<()> {
-    let service = PipelineService::new(MockAsrEngine, MockTranslator, 128);
+    let service = PipelineService::new(MockAsrProvider, MockTranslatorProvider, 128);
 
     let status_evt = DaemonEvent::Status {
         message: "daemon started".to_string(),
@@ -502,7 +501,7 @@ async fn cmd_daemon_serve(
     let source = source_lang.to_string();
     let target = target_lang.to_string();
     tokio::spawn(async move {
-        let service = PipelineService::new(MockAsrEngine, MockTranslator, 128);
+        let service = PipelineService::new(MockAsrProvider, MockTranslatorProvider, 128);
 
         let started = DaemonEvent::Status {
             message: "daemon started".to_string(),

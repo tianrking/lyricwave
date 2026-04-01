@@ -1,35 +1,30 @@
 use cpal::traits::{DeviceTrait, HostTrait};
 
-use super::{
+use crate::audio::{
     AudioBackend, AudioError, BackendCapabilities, CaptureRequest, CaptureTarget, CommandSpec,
     DeviceInfo,
 };
 
-pub struct CpalBackend;
+use super::platform;
 
-impl CpalBackend {
+pub struct CpalFfmpegBackend;
+
+impl CpalFfmpegBackend {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl AudioBackend for CpalBackend {
+impl AudioBackend for CpalFfmpegBackend {
     fn backend_name(&self) -> &'static str {
         "cpal+ffmpeg"
     }
 
     fn capabilities(&self) -> BackendCapabilities {
-        #[cfg(target_os = "macos")]
-        let note = "macOS needs a loopback-capable input (e.g. BlackHole) as audio source";
-        #[cfg(target_os = "windows")]
-        let note = "Windows uses WASAPI input; loopback behavior depends on FFmpeg/device support";
-        #[cfg(target_os = "linux")]
-        let note = "Linux uses PulseAudio/PipeWire source; monitor source may be required";
-
         BackendCapabilities {
             system_loopback_capture: true,
             per_app_capture: false,
-            note,
+            note: platform::capability_note(),
         }
     }
 
@@ -67,59 +62,8 @@ impl AudioBackend for CpalBackend {
             "-y".to_string(),
         ];
 
-        #[cfg(target_os = "windows")]
-        {
-            args.push("-f".to_string());
-            args.push("wasapi".to_string());
-            args.push("-i".to_string());
-            args.push(
-                request
-                    .input_device_hint
-                    .clone()
-                    .unwrap_or_else(|| "default".to_string()),
-            );
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            args.push("-f".to_string());
-            args.push("avfoundation".to_string());
-            args.push("-i".to_string());
-            let audio_selector = request
-                .input_device_hint
-                .as_deref()
-                .unwrap_or(":0")
-                .to_string();
-            args.push(audio_selector);
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            args.push("-f".to_string());
-            args.push("pulse".to_string());
-            args.push("-i".to_string());
-            args.push(
-                request
-                    .input_device_hint
-                    .clone()
-                    .unwrap_or_else(|| "default".to_string()),
-            );
-        }
-
-        if let Some(sample_rate) = request.sample_rate {
-            args.push("-ar".to_string());
-            args.push(sample_rate.to_string());
-        }
-
-        if let Some(channels) = request.channels {
-            args.push("-ac".to_string());
-            args.push(channels.to_string());
-        }
-
-        if let Some(duration) = request.duration_secs {
-            args.push("-t".to_string());
-            args.push(duration.to_string());
-        }
+        args.extend(platform::ffmpeg_input_args(request));
+        platform::append_common_ffmpeg_args(&mut args, request);
 
         match &request.target {
             CaptureTarget::File(path) => {

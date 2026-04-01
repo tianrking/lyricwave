@@ -1,23 +1,17 @@
 use std::path::PathBuf;
 
-use super::{
-    AsrEngine, AsrFileEngine, MockAsrEngine, MockTranslator, Translator, VibeVoiceAsrEngine,
-};
+use crate::pipeline::{AsrEngine, AsrFileEngine, Translator};
 
-#[derive(Debug, Clone, Copy)]
-pub enum ProviderMode {
-    LocalOffline,
-    OnlineApi,
-    Hybrid,
-}
+use super::mock_asr::MockAsrProvider;
+use super::mock_translator::MockTranslatorProvider;
+use super::passthrough_translator::PassthroughTranslatorProvider;
+use super::types::{ProviderDescriptor, ProviderMode};
+use super::vibevoice_file_asr::VibeVoiceFileAsrProvider;
 
-#[derive(Debug, Clone, Copy)]
-pub struct ProviderDescriptor {
-    pub id: &'static str,
-    pub capability: &'static str,
-    pub mode: ProviderMode,
-    pub requires_setup: bool,
-    pub note: &'static str,
+pub struct FileAsrBuildContext {
+    pub python_bin: String,
+    pub vibevoice_dir: Option<PathBuf>,
+    pub model_path: String,
 }
 
 pub fn asr_text_providers() -> Vec<ProviderDescriptor> {
@@ -84,39 +78,34 @@ pub fn translator_providers() -> Vec<ProviderDescriptor> {
 
 pub fn build_text_asr(provider_id: &str) -> Result<Box<dyn AsrEngine>, String> {
     match provider_id {
-        "mock" => Ok(Box::new(MockAsrEngine)),
+        "mock" => Ok(Box::new(MockAsrProvider)),
         _ => Err(format!("unknown text ASR provider: {provider_id}")),
     }
 }
 
 pub fn build_translator(provider_id: &str) -> Result<Box<dyn Translator>, String> {
     match provider_id {
-        "mock" => Ok(Box::new(MockTranslator)),
-        "passthrough" => Ok(Box::new(PassthroughTranslator)),
+        "mock" => Ok(Box::new(MockTranslatorProvider)),
+        "passthrough" => Ok(Box::new(PassthroughTranslatorProvider)),
         _ => Err(format!("unknown translator provider: {provider_id}")),
     }
 }
 
-pub fn build_file_asr_vibevoice(
-    python_bin: String,
-    repo_dir: PathBuf,
-    model_path: String,
-) -> Box<dyn AsrFileEngine> {
-    Box::new(VibeVoiceAsrEngine {
-        python_bin,
-        repo_dir,
-        model_path,
-    })
-}
-
-pub struct PassthroughTranslator;
-
-impl Translator for PassthroughTranslator {
-    fn name(&self) -> &'static str {
-        "passthrough"
-    }
-
-    fn translate(&self, input: &str, _target_lang: &str) -> String {
-        input.to_string()
+pub fn build_file_asr(
+    provider_id: &str,
+    ctx: FileAsrBuildContext,
+) -> Result<Box<dyn AsrFileEngine>, String> {
+    match provider_id {
+        "vibevoice" => {
+            let repo_dir = ctx.vibevoice_dir.ok_or_else(|| {
+                "--vibevoice-dir is required when --asr-provider vibevoice".to_string()
+            })?;
+            Ok(Box::new(VibeVoiceFileAsrProvider {
+                python_bin: ctx.python_bin,
+                repo_dir,
+                model_path: ctx.model_path,
+            }))
+        }
+        _ => Err(format!("unknown file ASR provider: {provider_id}")),
     }
 }
