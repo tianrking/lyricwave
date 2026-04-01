@@ -15,6 +15,12 @@ impl CpalFfmpegBackend {
     }
 }
 
+impl Default for CpalFfmpegBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AudioBackend for CpalFfmpegBackend {
     fn backend_name(&self) -> &'static str {
         "cpal+ffmpeg"

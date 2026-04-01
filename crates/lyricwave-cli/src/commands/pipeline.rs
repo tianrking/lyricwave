@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
@@ -40,7 +40,7 @@ pub fn demo(
 
 #[allow(clippy::too_many_arguments)]
 pub fn asr_file(
-    audio: &PathBuf,
+    audio: &Path,
     asr_provider: &str,
     vibevoice_dir: Option<&PathBuf>,
     model_path: &str,

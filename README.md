@@ -1,62 +1,93 @@
 # lyricwave
 
-`lyricwave` is a Rust-first CLI for cross-platform system audio capture with a subtitle and translation pipeline designed for future desktop overlays.
+`lyricwave` is a Rust-first CLI for cross-platform system audio capture with ASR + translation pipeline primitives and overlay-ready event streaming.
 
-## What is implemented now
+## Project Status
 
-- Cross-platform backend abstraction with capability metadata
-- System capture command generation via `ffmpeg` (macOS / Linux / Windows templates)
-- Output device discovery via `cpal`
-- Structured daemon event stream (`JSONL`) for future floating window clients
-- Pluggable ASR / translation interfaces with mock engines
-- External offline VibeVoice ASR provider integration (via process invocation)
+- Architecture: modular and extensible (`audio/backends` + `pipeline/providers`)
+- Core offline workflow: implemented (`capture -> asr -> translate`)
+- Cross-platform code paths: macOS / Linux / Windows implemented
+- Cross-platform CI: enabled (GitHub Actions matrix)
 
-## CLI commands
+## Feature Matrix (Current)
+
+### Audio / Capture
+
+- [x] List output devices
+- [x] Build system capture command templates for macOS/Linux/Windows
+- [x] Capture to WAV / FLAC
+- [x] Stream raw PCM to stdout
+- [x] Select audio backend by id (`--audio-backend`)
+- [ ] Per-app/process capture
+- [ ] Native platform loopback implementation without ffmpeg dependency
+
+### ASR / Translation
+
+- [x] Provider registry (directory-based, pluggable)
+- [x] Offline external VibeVoice file ASR provider
+- [x] Translator providers: `mock`, `passthrough`, `deepl`, `libretranslate`
+- [x] One-shot offline main flow (`pipeline run-once`)
+- [ ] Online ASR providers (OpenAI/Deepgram) runtime implementation
+- [ ] Streaming ASR in daemon mode
+
+### Daemon / Integration
+
+- [x] JSONL event output (`daemon run`)
+- [x] TCP JSONL event stream (`daemon serve`)
+- [ ] WebSocket transport
+- [ ] macOS floating overlay UI client
+
+## Platform Support
+
+Code-level support is implemented for all major desktop OS audio stacks via backend templates:
+
+- macOS: `avfoundation` input template (loopback-capable device required)
+- Linux: `pulse` input template (PulseAudio/PipeWire monitor may be required)
+- Windows: `wasapi` input template
+
+Notes:
+
+- macOS has been the primary local runtime environment during development.
+- Linux/Windows are covered by code paths and CI builds, but real-device behavioral validation is still recommended per environment.
+
+## Installation
+
+### Prerequisites
+
+- Rust stable toolchain
+- `ffmpeg` available in `PATH`
+- Optional for offline ASR:
+  - local checkout of `microsoft/VibeVoice`
+  - Python environment that can run VibeVoice ASR script
+
+### Build
 
 ```bash
-# List all pluggable audio backends
+cargo build --workspace
+```
+
+### Quick Validation
+
+```bash
+cargo run -p lyricwave-cli -- backends list
+cargo run -p lyricwave-cli -- providers list
+cargo run -p lyricwave-cli -- devices list
+```
+
+## Core Commands
+
+```bash
+# Audio backend catalog
 cargo run -p lyricwave-cli -- backends list
 
-# List all pluggable providers (local + online/planned)
+# Provider catalog
 cargo run -p lyricwave-cli -- providers list
 
-# List devices and backend capability notes
-cargo run -p lyricwave-cli -- devices list
-# choose backend explicitly
+# Explicit backend selection
 cargo run -p lyricwave-cli -- --audio-backend cpal+ffmpeg devices list
 
-# Capture system audio to WAV (requires ffmpeg in PATH)
+# Capture system audio to file
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10
-
-# Capture to FLAC
-cargo run -p lyricwave-cli -- capture system --out out.flac --format flac --seconds 10
-
-# Stream raw PCM to stdout
-cargo run -p lyricwave-cli -- capture system --stdout --seconds 5 > out.pcm
-
-# Pipeline demo (mock ASR + mock translation)
-cargo run -p lyricwave-cli -- pipeline demo --text "hello from lyricwave" --target-lang zh \
-  --asr-provider mock --translator-provider mock
-
-# Pipeline demo with DeepL (requires DEEPL_API_KEY)
-DEEPL_API_KEY=your_key_here \
-cargo run -p lyricwave-cli -- pipeline demo --text "hello world" --target-lang ZH \
-  --asr-provider mock --translator-provider deepl
-
-# Pipeline demo with LibreTranslate (self-hosted recommended)
-LIBRETRANSLATE_BASE_URL=http://127.0.0.1:5000 \
-cargo run -p lyricwave-cli -- pipeline demo --text "hello world" --target-lang zh \
-  --asr-provider mock --translator-provider libretranslate
-
-# Offline ASR via external VibeVoice repo (no vendoring in lyricwave)
-cargo run -p lyricwave-cli -- pipeline asr-file \
-  --audio ./sample.wav \
-  --asr-provider vibevoice \
-  --vibevoice-dir /absolute/path/to/VibeVoice \
-  --model-path microsoft/VibeVoice-ASR \
-  --python-bin python \
-  --target-lang zh \
-  --translator-provider mock
 
 # Main one-shot workflow: capture -> ASR -> translate -> JSON
 cargo run -p lyricwave-cli -- pipeline run-once \
@@ -67,53 +98,86 @@ cargo run -p lyricwave-cli -- pipeline run-once \
   --target-lang zh \
   --translator-provider mock
 
-# Daemon JSON stream for overlay integration
+# Daemon JSON stream
 cargo run -p lyricwave-cli -- daemon run --target-lang zh --interval-ms 500 --count 5
 
-# Daemon TCP JSONL stream for GUI overlay clients
+# Daemon TCP JSONL stream
 cargo run -p lyricwave-cli -- daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
-# Then connect from another terminal:
-nc 127.0.0.1 7878
 ```
+
+## Provider Configuration
+
+### DeepL
+
+- `DEEPL_API_KEY` (required)
+- `DEEPL_BASE_URL` (optional, default: `https://api-free.deepl.com`)
+
+### LibreTranslate
+
+- `LIBRETRANSLATE_BASE_URL` (optional, default: `http://127.0.0.1:5000`)
+- `LIBRETRANSLATE_API_KEY` (optional)
+
+### VibeVoice ASR (external mode)
+
+- `lyricwave` does not vendor `microsoft/VibeVoice` source code.
+- Provide local path via `--vibevoice-dir`.
+- Invoked entrypoint:
+  - `python demo/vibevoice_asr_inference_from_file.py --model_path ... --audio_files ...`
 
 ## Architecture
 
 - `crates/lyricwave-core`
-  - `audio`: backend trait + backend registry
-  - `audio/backends/`: one backend per file + `platform/` OS strategy modules + `registry.rs`
-  - `pipeline`: event schema, event hub, ASR/translator traits
-  - `pipeline/providers/`: one provider per file + central `registry.rs` for descriptor/selection
-  - `service`: orchestration layer joining ASR + translation + events
+  - `audio`
+    - backend trait + backend registry
+    - `audio/backends/` one backend per file
+    - `audio/backends/platform/` OS strategy modules
+  - `pipeline`
+    - event schema + event hub + traits
+    - `pipeline/providers/` one provider per file + central registry
+  - `service`
+    - orchestration layer combining ASR + translation + events
 - `crates/lyricwave-cli`
-  - user-facing command interface and process execution
+  - `cli.rs`: command definitions
+  - `commands/*`: command handlers by domain
+  - `main.rs`: thin dispatcher
 
-### Provider extension pattern
+## CI
 
-1. Add a new provider file under `crates/lyricwave-core/src/pipeline/providers/`.
-2. Implement the relevant trait (`AsrEngine`, `AsrFileEngine`, or `Translator`).
-3. Register descriptor + builder entry in `providers/registry.rs`.
-4. The provider automatically becomes visible in `lyricwave providers list`.
+Workflow file:
 
-### Online Translator Provider Config
+- `.github/workflows/ci.yml`
 
-- `deepl`
-  - `DEEPL_API_KEY` (required)
-  - `DEEPL_BASE_URL` (optional, default: `https://api-free.deepl.com`)
-- `libretranslate`
-  - `LIBRETRANSLATE_BASE_URL` (optional, default: `http://127.0.0.1:5000`)
-  - `LIBRETRANSLATE_API_KEY` (optional)
+CI runs on push/PR to `main` and includes:
 
-## Platform note
+- `cargo fmt --all -- --check`
+- `cargo clippy --workspace --all-targets`
+- `cargo check --workspace`
+- `cargo test --workspace`
 
-The capture command is unified, but each OS still depends on local audio stack setup:
+Matrix:
 
-- macOS: use a loopback-capable input (for example a virtual device) for full system mix capture
-- Linux: PulseAudio/PipeWire monitor source may be needed
-- Windows: WASAPI input/endpoint availability depends on system setup
+- `ubuntu-latest`
+- `macos-latest`
+- `windows-latest`
 
-## VibeVoice external mode notes
+## Troubleshooting
 
-- `lyricwave` does not include `microsoft/VibeVoice` source code.
-- You provide a local VibeVoice checkout via `--vibevoice-dir`.
-- `lyricwave` invokes this VibeVoice entrypoint:
-  - `python demo/vibevoice_asr_inference_from_file.py --model_path ... --audio_files ...`
+### `capture` fails on macOS with no usable input
+
+Install/configure a loopback-capable virtual audio device and pass correct input selector/device hint.
+
+### `pipeline asr-file` fails for vibevoice
+
+Check:
+
+- `--vibevoice-dir` points to valid VibeVoice checkout
+- Python env has required dependencies
+- `--model-path` matches installed/available model
+
+### `deepl` provider says missing key
+
+Set `DEEPL_API_KEY` in your shell before running command.
+
+### `libretranslate` returns HTTP error
+
+Check `LIBRETRANSLATE_BASE_URL` and whether your server/public endpoint requires API key.
