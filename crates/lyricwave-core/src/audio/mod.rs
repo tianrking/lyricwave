@@ -3,8 +3,9 @@ mod backends;
 mod selection;
 
 pub use backend::{
-    AudioBackend, AudioError, BackendCapabilities, CaptureFormat, CaptureReport, CaptureRequest,
-    CaptureScope, CaptureTarget, InputDeviceInfo, OutputDeviceInfo, ProcessSelector,
+    ActiveAudioProcessInfo, AudioBackend, AudioError, BackendCapabilities, CaptureFormat,
+    CaptureReport, CaptureRequest, CaptureScope, CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
+    ProcessSelector,
 };
 pub use backends::{
     AudioBackendDescriptor, CpalNativeBackend, audio_backends, build_audio_backend,

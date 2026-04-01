@@ -86,6 +86,33 @@ fn main() -> Result<()> {
                         report.matched_processes.join("; ")
                     );
                 }
+                CaptureCommands::AppsList => {
+                    commands::capture::apps_list(backend.as_ref())?;
+                }
+                CaptureCommands::AppsSplit {
+                    out_dir,
+                    seconds,
+                    sample_rate,
+                    channels,
+                    format,
+                    pid,
+                    name,
+                    all_active,
+                    mix_out,
+                } => {
+                    commands::capture::apps_split(
+                        backend.as_ref(),
+                        out_dir,
+                        seconds,
+                        sample_rate,
+                        channels,
+                        format.into(),
+                        pid,
+                        name,
+                        all_active,
+                        mix_out,
+                    )?;
+                }
             }
         }
         Commands::Pipeline { command } => match command {

@@ -7,8 +7,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde_json::Value;
 
 use crate::audio::{
-    AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope, CaptureTarget,
-    InputDeviceInfo, ProcessSelector,
+    ActiveAudioProcessInfo, AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope,
+    CaptureTarget, InputDeviceInfo, ProcessSelector,
 };
 
 pub fn capability_note() -> &'static str {
@@ -17,6 +17,20 @@ pub fn capability_note() -> &'static str {
 
 pub fn supports_per_app_capture() -> bool {
     true
+}
+
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    let inputs = list_sink_inputs()?;
+    let mut uniq = std::collections::BTreeMap::<u32, String>::new();
+    for item in inputs {
+        if item.pid > 0 {
+            uniq.entry(item.pid).or_insert(item.name);
+        }
+    }
+    Ok(uniq
+        .into_iter()
+        .map(|(pid, name)| ActiveAudioProcessInfo { pid, name })
+        .collect())
 }
 
 pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, AudioError> {

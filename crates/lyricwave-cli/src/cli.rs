@@ -135,6 +135,38 @@ pub enum CaptureCommands {
         #[arg(long)]
         name: Vec<String>,
     },
+    /// List active audio processes that backend can detect.
+    AppsList,
+    /// Capture multiple app processes into independent files, with optional mixed output.
+    AppsSplit {
+        /// Directory for per-process wav files.
+        #[arg(long)]
+        out_dir: PathBuf,
+        /// Capture duration in seconds.
+        #[arg(long)]
+        seconds: u32,
+        /// Optional target sample rate.
+        #[arg(long)]
+        sample_rate: Option<u32>,
+        /// Optional target channel count.
+        #[arg(long)]
+        channels: Option<u16>,
+        /// Capture format when writing files.
+        #[arg(long, value_enum, default_value_t = FileFormatArg::Wav)]
+        format: FileFormatArg,
+        /// Match by process id (repeatable).
+        #[arg(long)]
+        pid: Vec<u32>,
+        /// Match by application name contains (repeatable, case-insensitive).
+        #[arg(long)]
+        name: Vec<String>,
+        /// Capture all currently active audio processes.
+        #[arg(long, default_value_t = false)]
+        all_active: bool,
+        /// Optional mixed output file generated from captured split files.
+        #[arg(long)]
+        mix_out: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand, Debug)]

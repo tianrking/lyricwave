@@ -835,6 +835,7 @@ dependencies = [
  "anyhow",
  "clap",
  "ctrlc",
+ "hound",
  "lyricwave-core",
  "serde_json",
  "tokio",

@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use wasapi::{AudioClient, Direction, SampleType, StreamMode, WaveFormat, initialize_mta};
 
 use crate::audio::{
-    AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope, CaptureTarget,
-    InputDeviceInfo, ProcessSelector,
+    ActiveAudioProcessInfo, AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope,
+    CaptureTarget, InputDeviceInfo, ProcessSelector,
 };
 
 pub fn capability_note() -> &'static str {
@@ -20,6 +20,54 @@ pub fn capability_note() -> &'static str {
 
 pub fn supports_per_app_capture() -> bool {
     true
+}
+
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    initialize_mta().ok();
+
+    let enumerator = wasapi::DeviceEnumerator::new()
+        .map_err(|e| AudioError::Message(format!("create wasapi enumerator failed: {e}")))?;
+    let devices = enumerator
+        .get_device_collection(&Direction::Render)
+        .map_err(|e| AudioError::Message(format!("enumerate render devices failed: {e}")))?;
+
+    let mut active_pids = HashSet::<u32>::new();
+    for device in &devices {
+        let dev = match device {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+        let manager = match dev.get_iaudiosessionmanager() {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let sessions = match manager.get_audiosessionenumerator() {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let count = sessions.get_count().unwrap_or(0);
+        for idx in 0..count {
+            if let Ok(control) = sessions.get_session(idx)
+                && let Ok(pid) = control.get_process_id()
+                && pid > 0
+            {
+                active_pids.insert(pid);
+            }
+        }
+    }
+
+    let names = tasklist_rows()?;
+    let mut map = std::collections::BTreeMap::<u32, String>::new();
+    for (name, pid) in names {
+        if active_pids.contains(&pid) {
+            map.entry(pid).or_insert(name);
+        }
+    }
+
+    Ok(map
+        .into_iter()
+        .map(|(pid, name)| ActiveAudioProcessInfo { pid, name })
+        .collect())
 }
 
 pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, AudioError> {

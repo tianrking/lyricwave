@@ -28,6 +28,18 @@ pub struct InputDeviceInfo {
     pub is_loopback_candidate: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct ActiveAudioProcessInfo {
+    pub pid: u32,
+    pub name: String,
+}
+
+impl fmt::Display for ActiveAudioProcessInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (pid={})", self.name, self.pid)
+    }
+}
+
 impl fmt::Display for InputDeviceInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let default_tag = if self.is_default { " (default)" } else { "" };
@@ -122,5 +134,6 @@ pub trait AudioBackend: Send + Sync {
     fn capabilities(&self) -> BackendCapabilities;
     fn list_output_devices(&self) -> Result<Vec<OutputDeviceInfo>, AudioError>;
     fn list_input_devices(&self) -> Result<Vec<InputDeviceInfo>, AudioError>;
+    fn list_active_audio_processes(&self) -> Result<Vec<ActiveAudioProcessInfo>, AudioError>;
     fn capture_blocking(&self, request: &CaptureRequest) -> Result<CaptureReport, AudioError>;
 }

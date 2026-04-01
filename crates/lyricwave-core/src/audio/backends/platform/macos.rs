@@ -7,8 +7,8 @@ use std::time::Duration;
 use serde_json::Value;
 
 use crate::audio::{
-    AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope, CaptureTarget,
-    InputDeviceInfo, ProcessSelector,
+    ActiveAudioProcessInfo, AudioError, CaptureFormat, CaptureReport, CaptureRequest, CaptureScope,
+    CaptureTarget, InputDeviceInfo, ProcessSelector,
 };
 
 pub fn capability_note() -> &'static str {
@@ -17,6 +17,51 @@ pub fn capability_note() -> &'static str {
 
 pub fn supports_per_app_capture() -> bool {
     true
+}
+
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    let helper = ensure_helper_binary()?;
+    let output = Command::new(helper)
+        .arg("--list-apps")
+        .output()
+        .map_err(|e| {
+            AudioError::Message(format!("failed to run macOS SC helper list mode: {e}"))
+        })?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(AudioError::Message(format!(
+            "macOS SC helper list mode failed: {}",
+            stderr.trim()
+        )));
+    }
+
+    let value: Value = serde_json::from_slice(&output.stdout)
+        .map_err(|e| AudioError::Message(format!("invalid list-apps json: {e}")))?;
+    let apps = value
+        .as_array()
+        .ok_or_else(|| AudioError::Message("list-apps response is not array".to_string()))?;
+
+    let mut out = Vec::new();
+    for app in apps {
+        let pid = app.get("pid").and_then(Value::as_u64).unwrap_or(0) as u32;
+        let name = app
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown")
+            .trim()
+            .to_string();
+        if pid > 0 {
+            let name = if name.is_empty() {
+                "unknown".to_string()
+            } else {
+                name
+            };
+            out.push(ActiveAudioProcessInfo { pid, name });
+        }
+    }
+    out.sort_by_key(|x| x.pid);
+    out.dedup_by_key(|x| x.pid);
+    Ok(out)
 }
 
 pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, AudioError> {

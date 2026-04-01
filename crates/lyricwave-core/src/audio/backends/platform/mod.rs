@@ -7,7 +7,7 @@ mod unsupported;
 #[cfg(target_os = "windows")]
 mod windows;
 
-use crate::audio::{AudioError, CaptureReport, CaptureRequest};
+use crate::audio::{ActiveAudioProcessInfo, AudioError, CaptureReport, CaptureRequest};
 
 #[cfg(target_os = "linux")]
 pub fn capability_note() -> &'static str {
@@ -58,4 +58,21 @@ pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, Audi
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 pub fn capture_processes(request: &CaptureRequest) -> Result<CaptureReport, AudioError> {
     unsupported::capture_processes(request)
+}
+
+#[cfg(target_os = "linux")]
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    linux::list_active_audio_processes()
+}
+#[cfg(target_os = "macos")]
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    macos::list_active_audio_processes()
+}
+#[cfg(target_os = "windows")]
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    windows::list_active_audio_processes()
+}
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+pub fn list_active_audio_processes() -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+    unsupported::list_active_audio_processes()
 }

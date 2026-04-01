@@ -7,8 +7,8 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use crate::audio::selection::select_input_device;
 use crate::audio::{
-    AudioBackend, AudioError, BackendCapabilities, CaptureFormat, CaptureReport, CaptureRequest,
-    CaptureScope, CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
+    ActiveAudioProcessInfo, AudioBackend, AudioError, BackendCapabilities, CaptureFormat,
+    CaptureReport, CaptureRequest, CaptureScope, CaptureTarget, InputDeviceInfo, OutputDeviceInfo,
 };
 
 use super::platform;
@@ -68,6 +68,10 @@ impl AudioBackend for CpalNativeBackend {
 
     fn list_input_devices(&self) -> Result<Vec<InputDeviceInfo>, AudioError> {
         list_input_devices_with_host(&cpal::default_host())
+    }
+
+    fn list_active_audio_processes(&self) -> Result<Vec<ActiveAudioProcessInfo>, AudioError> {
+        platform::list_active_audio_processes()
     }
 
     fn capture_blocking(&self, request: &CaptureRequest) -> Result<CaptureReport, AudioError> {

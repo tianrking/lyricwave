@@ -23,6 +23,8 @@
 - [x] Per-app/process capture on Linux (PulseAudio/PipeWire: single/multi app)
 - [x] Per-app/process capture on macOS (ScreenCaptureKit: single/multi app, requires `--seconds`)
 - [x] Per-app/process capture on Windows (WASAPI process loopback: single/multi app)
+- [x] List active/candidate app processes for app capture (`capture apps-list`)
+- [x] Split capture: export independent WAV per selected app (`capture apps-split`)
 - [ ] True per-OS loopback endpoints (WASAPI loopback/CoreAudio tap/PipeWire monitor) without manual routing
 
 ### ASR / Translation
@@ -97,6 +99,23 @@ cargo run -p lyricwave-cli -- capture app --out app.wav --pid 12345 --seconds 10
 
 # Capture multiple apps by pid/name (single and multiple are the same command)
 cargo run -p lyricwave-cli -- capture app --out apps.wav --pid 12345 --name chrome --name spotify
+
+# List active/candidate app processes
+cargo run -p lyricwave-cli -- capture apps-list
+
+# Split capture to independent files (one wav per process), with optional mixed wav
+cargo run -p lyricwave-cli -- capture apps-split \
+  --out-dir /tmp/lyricwave-split \
+  --seconds 10 \
+  --name "Google Chrome" \
+  --name "Music" \
+  --mix-out /tmp/lyricwave-mix.wav
+
+# Capture all active audio processes into separate files
+cargo run -p lyricwave-cli -- capture apps-split \
+  --out-dir /tmp/lyricwave-all \
+  --seconds 8 \
+  --all-active
 
 # Capture with explicit input-device hint
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10 --input-device "BlackHole"
@@ -234,6 +253,11 @@ Check:
 - System Settings -> Privacy & Security -> Screen Recording: allow terminal/app
 - run command with `--seconds` (current macOS helper requires fixed duration)
 - target app is running and matches `--pid` / `--name`
+
+### `apps-list` shows many entries on macOS
+
+`apps-list` on macOS is based on ScreenCaptureKit shareable applications (capture candidates).
+Use `--name` / `--pid` to narrow target apps for recording.
 
 ### `capture app` fails on Linux
 
