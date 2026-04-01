@@ -58,6 +58,11 @@ pub enum Commands {
         #[command(subcommand)]
         command: VideoCommands,
     },
+    /// Unified recording session (audio-only / video-only / audio+video)
+    Record {
+        #[command(subcommand)]
+        command: RecordCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -299,6 +304,40 @@ pub enum VideoCommands {
         #[arg(long)]
         fps: Option<u32>,
         /// Optional display hint.
+        #[arg(long)]
+        display: Option<String>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum RecordCommands {
+    /// Run one recording session with audio and/or video outputs.
+    Run {
+        /// Optional audio output wav file path.
+        #[arg(long)]
+        audio_out: Option<PathBuf>,
+        /// Optional video output file path.
+        #[arg(long)]
+        video_out: Option<PathBuf>,
+        /// Duration in seconds. Omit for manual stop.
+        #[arg(long)]
+        seconds: Option<u32>,
+        /// Audio sample rate.
+        #[arg(long)]
+        sample_rate: Option<u32>,
+        /// Audio channel count.
+        #[arg(long)]
+        channels: Option<u16>,
+        /// Optional audio input hint.
+        #[arg(long)]
+        input_device: Option<String>,
+        /// Disable loopback-first auto selection for audio.
+        #[arg(long, default_value_t = false)]
+        no_prefer_loopback: bool,
+        /// Video target fps.
+        #[arg(long)]
+        fps: Option<u32>,
+        /// Optional display hint for video.
         #[arg(long)]
         display: Option<String>,
     },

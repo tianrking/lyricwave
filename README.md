@@ -36,6 +36,8 @@ lyricwave --help
 Detailed CLI usage:
 - [Usage Guide (English)](./docs/USAGE.md)
 - [使用手册（中文）](./docs/USAGE.zh-CN.md)
+- [Architecture (English)](./docs/ARCHITECTURE.md)
+- [架构说明（中文）](./docs/ARCHITECTURE.zh-CN.md)
 
 ## Build From Source
 
@@ -77,6 +79,12 @@ cargo build --workspace --release
 - display discovery command (`video displays`)
 - screen capture command scaffold (`video capture-screen`) for unified future A/V orchestration
 
+### Recording (Top-Level Orchestration)
+- unified A/V coordinator (`recording` module) for:
+  - audio-only session
+  - video-only session
+  - audio + video parallel session
+
 ## Quick CLI Examples
 
 ```bash
@@ -94,6 +102,9 @@ lyricwave video displays
 
 # video capture scaffold command (native implementation in progress)
 lyricwave video capture-screen --out screen.mp4 --seconds 10
+
+# unified session: audio + video together
+lyricwave record run --audio-out mic.wav --video-out screen.mp4 --seconds 10
 
 # capture system mix (10s)
 lyricwave capture system --out system.wav --seconds 10
@@ -122,9 +133,11 @@ lyricwave capture apps-split \
 ## Architecture
 
 - `crates/lyricwave-core`
-  - `audio`: backend traits, platform implementations, selection strategy
-  - `pipeline`: provider abstractions/registry/events
-  - `service`: orchestration layer
+  - `audio`: audio capture domain
+  - `video`: video capture domain
+  - `recording`: top-level A/V session orchestration (compose audio/video)
+  - `pipeline`: ASR/translation processing domain (post-capture flow)
+  - `service`: pipeline service helpers
 - `crates/lyricwave-cli`
   - `cli.rs`: command model
   - `commands/*`: command handlers

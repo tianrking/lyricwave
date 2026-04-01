@@ -168,3 +168,35 @@ lyricwave video capture-screen --out screen.mp4 --seconds 10
 说明：
 - 这是统一的 video 架构入口。
 - 各平台原生录屏实现已经有后端路由，后续会逐步填充。
+
+## 11. 统一录制会话（音频 / 视频 / 音视频联合）
+
+通过一条命令可执行仅音频、仅视频、或音视频联合录制。
+
+```bash
+# 仅音频
+lyricwave record run --audio-out system.wav --seconds 10
+
+# 仅视频
+lyricwave record run --video-out screen.mp4 --seconds 10
+
+# 音频+视频同时录
+lyricwave record run --audio-out system.wav --video-out screen.mp4 --seconds 10
+
+# 手动停止（不传 --seconds）：按 Enter 或 Ctrl+C
+lyricwave record run --audio-out system.wav --video-out screen.mp4
+```
+
+关键参数：
+
+```bash
+--audio-out <FILE>
+--video-out <FILE>
+--seconds <N>            # 可选，不传即手动停止
+--sample-rate <HZ>       # 音频
+--channels <N>           # 音频
+--input-device <HINT>    # 音频
+--no-prefer-loopback     # 音频
+--fps <N>                # 视频
+--display <HINT>         # 视频
+```

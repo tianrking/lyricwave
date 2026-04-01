@@ -36,6 +36,8 @@ lyricwave --help
 详细 CLI 手册：
 - [Usage Guide (English)](./docs/USAGE.md)
 - [使用手册（中文）](./docs/USAGE.zh-CN.md)
+- [Architecture (English)](./docs/ARCHITECTURE.md)
+- [架构说明（中文）](./docs/ARCHITECTURE.zh-CN.md)
 
 ## 从源码构建
 
@@ -70,6 +72,9 @@ lyricwave video displays
 # video 录屏命令骨架（原生实现正在完善中）
 lyricwave video capture-screen --out screen.mp4 --seconds 10
 
+# 统一会话：音频+视频同时录制
+lyricwave record run --audio-out mic.wav --video-out screen.mp4 --seconds 10
+
 # 录制系统混音（10秒）
 lyricwave capture system --out system.wav --seconds 10
 
@@ -93,6 +98,19 @@ lyricwave capture apps-split \
 - CI 工作流：`.github/workflows/ci.yml`
 - Release 工作流：`.github/workflows/release.yml`
 - 打标签触发发版：`v*`（例如 `v0.1.0`）
+
+## 架构摘要
+
+- `crates/lyricwave-core`
+  - `audio`：音频采集域
+  - `video`：视频采集域
+  - `recording`：A/V 顶层会话编排（组合 audio/video）
+  - `pipeline`：ASR/翻译处理域（采集后的处理流）
+  - `service`：pipeline 服务辅助层
+- `crates/lyricwave-cli`
+  - `cli.rs`：命令模型定义
+  - `commands/*`：各命令处理器
+  - `main.rs`：命令分发
 
 ## 常见问题
 

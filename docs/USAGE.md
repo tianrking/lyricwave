@@ -168,3 +168,35 @@ lyricwave video capture-screen --out screen.mp4 --seconds 10
 Notes:
 - This is the unified video architecture entrypoint.
 - Native per-OS screen recorder implementations are wired by backend platform modules and will be filled incrementally.
+
+## 11. Unified Record Session (Audio / Video / A+V)
+
+Use one command to run audio-only, video-only, or audio+video recording.
+
+```bash
+# audio-only
+lyricwave record run --audio-out system.wav --seconds 10
+
+# video-only
+lyricwave record run --video-out screen.mp4 --seconds 10
+
+# audio + video together
+lyricwave record run --audio-out system.wav --video-out screen.mp4 --seconds 10
+
+# manual stop (no --seconds): press Enter or Ctrl+C
+lyricwave record run --audio-out system.wav --video-out screen.mp4
+```
+
+Key options:
+
+```bash
+--audio-out <FILE>
+--video-out <FILE>
+--seconds <N>            # optional, omit for manual stop
+--sample-rate <HZ>       # audio
+--channels <N>           # audio
+--input-device <HINT>    # audio
+--no-prefer-loopback     # audio
+--fps <N>                # video
+--display <HINT>         # video
+```
