@@ -8,7 +8,9 @@ use clap::{Parser, Subcommand, ValueEnum};
 use lyricwave_core::audio::{
     AudioBackend, CaptureFormat, CaptureRequest, CaptureTarget, CpalBackend,
 };
-use lyricwave_core::pipeline::{DaemonEvent, MockAsrEngine, MockTranslator};
+use lyricwave_core::pipeline::{
+    AsrFileEngine, DaemonEvent, MockAsrEngine, MockTranslator, Translator, VibeVoiceAsrEngine,
+};
 use lyricwave_core::service::PipelineService;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
@@ -104,6 +106,23 @@ enum PipelineCommands {
         #[arg(long, default_value = "zh")]
         target_lang: String,
     },
+    /// Offline ASR through an external VibeVoice checkout.
+    AsrFileVibevoice {
+        #[arg(long)]
+        audio: PathBuf,
+        #[arg(long)]
+        vibevoice_dir: PathBuf,
+        #[arg(long, default_value = "microsoft/VibeVoice-ASR")]
+        model_path: String,
+        #[arg(long, default_value = "python")]
+        python_bin: String,
+        #[arg(long, default_value = "auto")]
+        source_lang: String,
+        #[arg(long, default_value = "zh")]
+        target_lang: String,
+        #[arg(long, default_value_t = false)]
+        no_translate: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -185,6 +204,23 @@ fn main() -> Result<()> {
                 source_lang,
                 target_lang,
             } => cmd_pipeline_demo(&text, &source_lang, &target_lang)?,
+            PipelineCommands::AsrFileVibevoice {
+                audio,
+                vibevoice_dir,
+                model_path,
+                python_bin,
+                source_lang,
+                target_lang,
+                no_translate,
+            } => cmd_pipeline_asr_file_vibevoice(
+                &audio,
+                &vibevoice_dir,
+                &model_path,
+                &python_bin,
+                &source_lang,
+                &target_lang,
+                no_translate,
+            )?,
         },
         Commands::Daemon { command } => match command {
             DaemonCommands::Run {
@@ -287,6 +323,42 @@ fn cmd_pipeline_demo(text: &str, source_lang: &str, target_lang: &str) -> Result
     let evt = service.process_text(text, source_lang, target_lang);
     println!("source: {}", evt.source_text);
     println!("translation: {}", evt.translated_text.unwrap_or_default());
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn cmd_pipeline_asr_file_vibevoice(
+    audio: &PathBuf,
+    vibevoice_dir: &PathBuf,
+    model_path: &str,
+    python_bin: &str,
+    source_lang: &str,
+    target_lang: &str,
+    no_translate: bool,
+) -> Result<()> {
+    let asr = VibeVoiceAsrEngine {
+        python_bin: python_bin.to_string(),
+        repo_dir: vibevoice_dir.clone(),
+        model_path: model_path.to_string(),
+    };
+
+    let source_text = asr
+        .transcribe_file(audio)
+        .map_err(anyhow::Error::msg)
+        .with_context(|| format!("{} failed for {}", asr.name(), audio.display()))?;
+
+    println!("asr_provider: {}", asr.name());
+    println!("source: {source_text}");
+
+    if !no_translate {
+        let translator = MockTranslator;
+        let translated = translator.translate(&source_text, target_lang);
+        println!("translator: {}", translator.name());
+        println!("translation: {translated}");
+    }
+
+    println!("source_lang_hint: {source_lang}");
+    println!("target_lang: {target_lang}");
     Ok(())
 }
 
