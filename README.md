@@ -160,6 +160,13 @@ Matrix:
 - `macos-latest`
 - `windows-latest`
 
+Additional architecture smoke checks:
+
+- `x86_64-unknown-linux-gnu` (required)
+- `i686-unknown-linux-gnu` (experimental, non-blocking)
+- `aarch64-unknown-linux-gnu` (experimental, non-blocking)
+- `armv7-unknown-linux-gnueabihf` (experimental, non-blocking)
+
 ## Troubleshooting
 
 ### `capture` fails on macOS with no usable input
