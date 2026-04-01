@@ -38,6 +38,16 @@ cargo run -p lyricwave-cli -- capture system --stdout --seconds 5 > out.pcm
 cargo run -p lyricwave-cli -- pipeline demo --text "hello from lyricwave" --target-lang zh \
   --asr-provider mock --translator-provider mock
 
+# Pipeline demo with DeepL (requires DEEPL_API_KEY)
+DEEPL_API_KEY=your_key_here \
+cargo run -p lyricwave-cli -- pipeline demo --text "hello world" --target-lang ZH \
+  --asr-provider mock --translator-provider deepl
+
+# Pipeline demo with LibreTranslate (self-hosted recommended)
+LIBRETRANSLATE_BASE_URL=http://127.0.0.1:5000 \
+cargo run -p lyricwave-cli -- pipeline demo --text "hello world" --target-lang zh \
+  --asr-provider mock --translator-provider libretranslate
+
 # Offline ASR via external VibeVoice repo (no vendoring in lyricwave)
 cargo run -p lyricwave-cli -- pipeline asr-file \
   --audio ./sample.wav \
@@ -74,6 +84,15 @@ nc 127.0.0.1 7878
 2. Implement the relevant trait (`AsrEngine`, `AsrFileEngine`, or `Translator`).
 3. Register descriptor + builder entry in `providers/registry.rs`.
 4. The provider automatically becomes visible in `lyricwave providers list`.
+
+### Online Translator Provider Config
+
+- `deepl`
+  - `DEEPL_API_KEY` (required)
+  - `DEEPL_BASE_URL` (optional, default: `https://api-free.deepl.com`)
+- `libretranslate`
+  - `LIBRETRANSLATE_BASE_URL` (optional, default: `http://127.0.0.1:5000`)
+  - `LIBRETRANSLATE_API_KEY` (optional)
 
 ## Platform note
 

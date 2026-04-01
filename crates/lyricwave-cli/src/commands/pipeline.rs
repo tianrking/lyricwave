@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use lyricwave_core::pipeline::{
-    FileAsrBuildContext, MockAsrProvider, MockTranslatorProvider, build_file_asr, build_text_asr,
-    build_translator,
+    FileAsrBuildContext, MockAsrProvider, MockTranslatorProvider, TranslatorBuildContext,
+    build_file_asr, build_text_asr, build_translator,
 };
 use lyricwave_core::service::PipelineService;
 
@@ -15,9 +15,12 @@ pub fn demo(
     translator_provider: &str,
 ) -> Result<()> {
     let asr = build_text_asr(asr_provider).map_err(anyhow::Error::msg)?;
-    let translator = build_translator(translator_provider).map_err(anyhow::Error::msg)?;
+    let translator = build_translator(translator_provider, TranslatorBuildContext::from_env())
+        .map_err(anyhow::Error::msg)?;
     let transcribed = asr.transcribe_text(text);
-    let translated = translator.translate(&transcribed, target_lang);
+    let translated = translator
+        .translate(&transcribed, target_lang)
+        .map_err(anyhow::Error::msg)?;
 
     let service = PipelineService::new(MockAsrProvider, MockTranslatorProvider, 64);
     let mut evt = service.process_text(&transcribed, source_lang, target_lang);
@@ -61,8 +64,11 @@ pub fn asr_file(
     println!("source: {source_text}");
 
     if !no_translate {
-        let translator = build_translator(translator_provider).map_err(anyhow::Error::msg)?;
-        let translated = translator.translate(&source_text, target_lang);
+        let translator = build_translator(translator_provider, TranslatorBuildContext::from_env())
+            .map_err(anyhow::Error::msg)?;
+        let translated = translator
+            .translate(&source_text, target_lang)
+            .map_err(anyhow::Error::msg)?;
         println!("translator: {}", translator.name());
         println!("translation: {translated}");
     }

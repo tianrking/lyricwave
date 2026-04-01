@@ -7,7 +7,7 @@ impl Translator for MockTranslatorProvider {
         "mock-translator"
     }
 
-    fn translate(&self, input: &str, target_lang: &str) -> String {
-        format!("[{target_lang}] {input}")
+    fn translate(&self, input: &str, target_lang: &str) -> Result<String, String> {
+        Ok(format!("[{target_lang}] {input}"))
     }
 }

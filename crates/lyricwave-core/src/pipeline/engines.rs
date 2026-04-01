@@ -12,5 +12,5 @@ pub trait AsrFileEngine: Send + Sync {
 
 pub trait Translator: Send + Sync {
     fn name(&self) -> &'static str;
-    fn translate(&self, input: &str, target_lang: &str) -> String;
+    fn translate(&self, input: &str, target_lang: &str) -> Result<String, String>;
 }

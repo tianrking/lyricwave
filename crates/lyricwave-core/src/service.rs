@@ -30,11 +30,20 @@ where
         target_lang: &str,
     ) -> TranscriptEvent {
         let transcribed = self.asr.transcribe_text(text);
-        let translated = self.translator.translate(&transcribed, target_lang);
+        let translated_text = match self.translator.translate(&transcribed, target_lang) {
+            Ok(text) => Some(text),
+            Err(err) => {
+                self.hub.publish(DaemonEvent::Error {
+                    message: format!("translator {} failed: {err}", self.translator.name()),
+                    emitted_at_ms: DaemonEvent::now_ms(),
+                });
+                None
+            }
+        };
 
         let evt = TranscriptEvent {
             source_text: transcribed,
-            translated_text: Some(translated),
+            translated_text,
             source_language: Some(LanguageTag(source_lang.to_string())),
             target_language: Some(LanguageTag(target_lang.to_string())),
             start_ms: 0,

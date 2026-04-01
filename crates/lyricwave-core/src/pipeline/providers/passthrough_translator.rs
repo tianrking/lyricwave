@@ -7,7 +7,7 @@ impl Translator for PassthroughTranslatorProvider {
         "passthrough"
     }
 
-    fn translate(&self, input: &str, _target_lang: &str) -> String {
-        input.to_string()
+    fn translate(&self, input: &str, _target_lang: &str) -> Result<String, String> {
+        Ok(input.to_string())
     }
 }
