@@ -3,4 +3,6 @@ mod platform;
 mod registry;
 
 pub use cpal_ffmpeg::CpalFfmpegBackend;
-pub use registry::{audio_backend_names, default_audio_backend};
+pub use registry::{
+    AudioBackendDescriptor, audio_backends, build_audio_backend, default_audio_backend,
+};

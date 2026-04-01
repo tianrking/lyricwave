@@ -5,4 +5,7 @@ pub use backend::{
     AudioBackend, AudioError, BackendCapabilities, CaptureFormat, CaptureRequest, CaptureTarget,
     CommandSpec, DeviceInfo,
 };
-pub use backends::{CpalFfmpegBackend, audio_backend_names, default_audio_backend};
+pub use backends::{
+    AudioBackendDescriptor, CpalFfmpegBackend, audio_backends, build_audio_backend,
+    default_audio_backend,
+};

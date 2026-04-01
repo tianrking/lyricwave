@@ -14,11 +14,16 @@
 ## CLI commands
 
 ```bash
+# List all pluggable audio backends
+cargo run -p lyricwave-cli -- backends list
+
 # List all pluggable providers (local + online/planned)
 cargo run -p lyricwave-cli -- providers list
 
 # List devices and backend capability notes
 cargo run -p lyricwave-cli -- devices list
+# choose backend explicitly
+cargo run -p lyricwave-cli -- --audio-backend cpal+ffmpeg devices list
 
 # Capture system audio to WAV (requires ffmpeg in PATH)
 cargo run -p lyricwave-cli -- capture system --out out.wav --seconds 10

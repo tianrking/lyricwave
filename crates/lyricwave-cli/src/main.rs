@@ -6,8 +6,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use lyricwave_core::audio::{
-    AudioBackend, CaptureFormat, CaptureRequest, CaptureTarget, audio_backend_names,
-    default_audio_backend,
+    AudioBackend, CaptureFormat, CaptureRequest, CaptureTarget, audio_backends, build_audio_backend,
 };
 use lyricwave_core::pipeline::{
     DaemonEvent, FileAsrBuildContext, MockAsrProvider, MockTranslatorProvider, asr_file_providers,
@@ -25,12 +24,21 @@ use tokio::sync::broadcast;
     about = "Cross-platform system audio capture and subtitle pipeline CLI"
 )]
 struct Cli {
+    /// Audio backend id used for capture/device commands.
+    #[arg(long, global = true, default_value = "cpal+ffmpeg")]
+    audio_backend: String,
+
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// List available audio backends
+    Backends {
+        #[command(subcommand)]
+        command: BackendCommands,
+    },
     /// List available ASR/translation providers
     Providers {
         #[command(subcommand)]
@@ -61,6 +69,12 @@ enum Commands {
 #[derive(Subcommand, Debug)]
 enum ProviderCommands {
     /// List provider catalog and setup requirements
+    List,
+}
+
+#[derive(Subcommand, Debug)]
+enum BackendCommands {
+    /// List audio backend catalog
     List,
 }
 
@@ -191,9 +205,14 @@ impl From<FileFormatArg> for CaptureFormat {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let backend = default_audio_backend();
+    let backend = build_audio_backend(&cli.audio_backend)
+        .map_err(anyhow::Error::msg)
+        .with_context(|| format!("failed to initialize audio backend '{}'", cli.audio_backend))?;
 
     match cli.command {
+        Commands::Backends { command } => match command {
+            BackendCommands::List => cmd_backends_list(),
+        },
         Commands::Providers { command } => match command {
             ProviderCommands::List => cmd_providers_list(),
         },
@@ -288,8 +307,16 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn cmd_backends_list() {
+    println!("audio_backends:");
+    for backend in audio_backends() {
+        println!("- id={} note={}", backend.id, backend.note);
+    }
+}
+
 fn cmd_providers_list() {
-    println!("audio_backends: {}", audio_backend_names().join(", "));
+    let audio_backend_ids: Vec<&str> = audio_backends().iter().map(|b| b.id).collect();
+    println!("audio_backends: {}", audio_backend_ids.join(", "));
 
     println!("text_asr:");
     for p in asr_text_providers() {
