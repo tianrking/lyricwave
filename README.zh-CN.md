@@ -54,50 +54,125 @@ cargo build --workspace --release
 | 当前活跃应用发现（`capture apps-list`） | 支持（基于 ScreenCaptureKit 可采集应用候选） | 支持（基于 sink-input 活跃进程） | 支持（基于 WASAPI session 活跃进程） |
 | 多应用拆分导出（`capture apps-split`） | 支持 | 支持 | 支持 |
 
-## 快速示例
+## 四大核心功能
+
+### 1）录制声音（Audio）
+只要声音，不要画面时使用。支持系统整体、单应用、多应用混合、多应用独立文件。
+
+常见场景：
+- 游戏/系统声音录制
+- 浏览器/音乐播放器录制
+- 每个应用分别导出独立 WAV
+
+前置配置：
+- macOS 按应用录制需要给终端宿主授权“屏幕录制”
+- Linux 按应用录制需要 `pactl`、`parecord`
+
+示例：
 
 ```bash
-# 查看后端/服务/设备
-lyricwave backends list
-lyricwave providers list
-lyricwave devices list
-
-# 查看当前活跃/候选音频应用
-lyricwave capture apps-list
-
-# 查看 visual 后端与显示器
-lyricwave visual backends
-lyricwave visual displays
-
-# visual 画面采集
-lyricwave visual system --out screen.mp4 --seconds 10
-lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
-
-# 统一会话：系统级音画
-lyricwave record system --audio-out mic.wav --visual-out screen.mp4 --seconds 10
-
-# 统一会话：指定应用音画
-lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
-
-# 按应用拆分输出音画
-lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
-
-# 录制系统混音（10秒）
+# 系统声音
 lyricwave capture system --out system.wav --seconds 10
 
-# 按应用录制（单应用）
+# 单应用声音
 lyricwave capture app --out chrome.wav --name "Google Chrome" --seconds 10
 
-# 按应用录制（多应用混合到一个文件）
-lyricwave capture app --out apps.wav --name "Google Chrome" --name "Music" --seconds 10
+# 多应用混合声音
+lyricwave capture app --out mixed.wav --name "Google Chrome" --name "Music" --seconds 10
 
-# 多应用拆分：每个应用一个 wav，可选额外输出混合 wav
+# 多应用独立声音文件（可选再输出一个混合文件）
 lyricwave capture apps-split \
-  --out-dir /tmp/lyricwave-split \
+  --out-dir /tmp/audio-split \
   --seconds 10 \
-  --name "Google Chrome" \
-  --name "Music" \
-  --mix-out /tmp/lyricwave-mix.wav
+  --all-active \
+  --mix-out /tmp/audio-mix.wav
+```
+
+### 2）录制画面（Visual）
+只要画面流，不要声音时使用。支持系统画面、指定应用画面、多应用独立画面文件。
+
+常见场景：
+- 纯录屏
+- 指定应用画面采集
+- 每个应用画面单独输出
+
+前置配置：
+- 按应用画面路由依赖平台原生能力，部分平台可能返回 `NotImplemented`
+
+示例：
+
+```bash
+# 系统画面
+lyricwave visual system --out system.mp4 --seconds 10
+
+# 单应用画面
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
+
+# 查看可选画面应用
+lyricwave visual apps-list
+
+# 多应用独立画面文件
+lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-active
+```
+
+### 3）声音转文字（ASR）
+把录音文件转成文本，可选再翻译。
+
+常见场景：
+- 录音生成转写文本
+- 字幕/会议记录生成
+- ASR 后再接翻译
+
+前置配置：
+- 准备本地 VibeVoice 仓库目录
+- 准备 Python 运行环境
+- 配置 provider 参数（`--asr-provider`、`--vibevoice-dir`、`--model-path`）
+
+示例：
+
+```bash
+# 已有音频文件 -> ASR
+lyricwave pipeline asr-file \
+  --audio /path/audio.wav \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice
+
+# 录制系统声音 -> ASR -> 翻译（一条命令）
+lyricwave pipeline run-once \
+  --seconds 8 \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice \
+  --python-bin python \
+  --target-lang zh \
+  --translator-provider mock
+```
+
+### 4）大一统：音画一起（Video Workflow）
+需要声音+画面一起时使用。支持系统级、指定应用级、按应用拆分输出；并可继续接 ASR。
+
+常见场景：
+- 系统级音画录制
+- 指定应用音画录制
+- 每个应用分别输出音频+画面
+- 对生成音频继续做 ASR
+
+示例：
+
+```bash
+# 系统级音画
+lyricwave record system --audio-out system.wav --visual-out system.mp4 --seconds 10
+
+# 指定应用音画
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+
+# 按应用拆分（每个应用输出一份 audio + 一份 visual）
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
+
+# 对拆分出来的音频继续做 ASR
+lyricwave pipeline asr-file \
+  --audio /tmp/compose-split/Google_Chrome-12345.wav \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice
 ```
 
 ## CI 与发版

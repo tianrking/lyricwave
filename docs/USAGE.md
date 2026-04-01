@@ -21,7 +21,14 @@ cargo build --workspace --release
 
 Current default is `cpal-native`.
 
-## 3. Discovery Commands
+## 3. Four-Function Map
+
+- Record Audio: section 4-6 (`capture system/app/apps-split`)
+- Record Visual: section 10 (`visual system/app/apps-list/apps-split`)
+- Speech To Text (ASR): section 7 (`pipeline asr-file`, `pipeline run-once`)
+- Unified A/V + ASR: section 11 (`record system/app/apps-split`) + section 7
+
+## 4. Discovery Commands
 
 ```bash
 lyricwave backends list
@@ -32,7 +39,7 @@ lyricwave capture apps-list
 
 `capture apps-list` prints active/candidate app processes for app capture.
 
-## 4. System Capture
+## 5. System Capture
 
 ### 4.1 Timed capture
 
@@ -58,7 +65,7 @@ Stop by pressing `Enter` or `Ctrl+C`.
 --stdout
 ```
 
-## 5. App Capture (Mixed Output)
+## 6. App Capture (Mixed Output)
 
 Capture one or more selected apps into one WAV output.
 
@@ -79,7 +86,7 @@ Key options:
 --channels <N>
 ```
 
-## 6. App Split Capture (Independent Files)
+## 7. App Split Capture (Independent Files)
 
 Export one WAV file per selected process.
 
@@ -114,7 +121,7 @@ Key options:
 --channels <N>
 ```
 
-## 7. Pipeline Commands
+## 8. Pipeline Commands
 
 ### 7.1 One-shot pipeline (capture -> ASR -> translation)
 
@@ -137,14 +144,14 @@ lyricwave pipeline asr-file \
   --vibevoice-dir /absolute/path/to/VibeVoice
 ```
 
-## 8. Daemon Commands
+## 9. Daemon Commands
 
 ```bash
 lyricwave daemon run --target-lang zh --interval-ms 500 --count 5
 lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ```
 
-## 9. Platform Notes
+## 10. Platform Notes
 
 ### macOS
 - `capture app` / `apps-split` require Screen Recording permission.
@@ -158,7 +165,7 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - App capture uses WASAPI process loopback.
 - The selected process must be actively producing audio while recording.
 
-## 10. Visual Commands
+## 11. Visual Commands
 
 ```bash
 lyricwave visual backends
@@ -172,7 +179,7 @@ lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-activ
 Notes:
 - `visual app` / `visual apps-split` rely on native per-process visual routing and may return NotImplemented depending on OS backend state.
 
-## 11. Unified Record Session (Audio / Visual / A+V)
+## 12. Unified Record Session (Audio / Visual / A+V)
 
 Use dedicated commands for system-level and app-level composition.
 

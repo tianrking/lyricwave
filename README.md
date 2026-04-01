@@ -85,50 +85,125 @@ cargo build --workspace --release
   - visual-only session
   - audio + visual parallel session
 
-## Quick CLI Examples
+## Four Core Functions
+
+### 1) Record Audio
+Use this when you only need sound (system mix, single app, multi-app mix, or per-app split files).
+
+Common scenarios:
+- game/system sound recording
+- browser/music app recording
+- collect each app into independent WAV files
+
+Prerequisites:
+- macOS app capture: grant Screen Recording permission for terminal host app
+- Linux app capture: install `pactl` and `parecord`
+
+Examples:
 
 ```bash
-# list backends/providers/devices
-lyricwave backends list
-lyricwave providers list
-lyricwave devices list
-
-# list current active/candidate app processes
-lyricwave capture apps-list
-
-# visual backend and display discovery
-lyricwave visual backends
-lyricwave visual displays
-
-# visual capture
-lyricwave visual system --out screen.mp4 --seconds 10
-lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
-
-# unified session: system A/V
-lyricwave record system --audio-out mic.wav --visual-out screen.mp4 --seconds 10
-
-# unified session: selected app A/V
-lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
-
-# split A/V per app
-lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
-
-# capture system mix (10s)
+# system audio
 lyricwave capture system --out system.wav --seconds 10
 
-# capture one app by name
+# single app audio
 lyricwave capture app --out chrome.wav --name "Google Chrome" --seconds 10
 
-# capture multiple apps into one mixed file
-lyricwave capture app --out apps.wav --name "Google Chrome" --name "Music" --seconds 10
+# multi-app mixed audio
+lyricwave capture app --out mixed.wav --name "Google Chrome" --name "Music" --seconds 10
 
-# split capture: one file per app + optional merged mix
+# per-app independent audio files (+ optional merged mix)
 lyricwave capture apps-split \
-  --out-dir /tmp/lyricwave-split \
+  --out-dir /tmp/audio-split \
   --seconds 10 \
-  --name "Google Chrome" \
-  --name "Music" \
-  --mix-out /tmp/lyricwave-mix.wav
+  --all-active \
+  --mix-out /tmp/audio-mix.wav
+```
+
+### 2) Record Visual (Screen/App Frames)
+Use this when you only need image stream/frame output.
+
+Common scenarios:
+- screen-only recording
+- app-oriented visual capture
+- per-app independent visual files
+
+Prerequisites:
+- visual per-app routing depends on OS-native backend status and may return `NotImplemented` on some platforms
+
+Examples:
+
+```bash
+# system visual
+lyricwave visual system --out system.mp4 --seconds 10
+
+# single app visual
+lyricwave visual app --out chrome.mp4 --name "Google Chrome" --seconds 10
+
+# list active visual process candidates
+lyricwave visual apps-list
+
+# per-app independent visual files
+lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-active
+```
+
+### 3) Speech To Text (ASR)
+Use this when you need transcript output from captured audio.
+
+Common scenarios:
+- turn recorded audio into text
+- run subtitle/transcript generation pipeline
+- optional translation after ASR
+
+Prerequisites:
+- prepare local VibeVoice repo path
+- have Python runtime available
+- set provider options (`--asr-provider`, `--vibevoice-dir`, `--model-path`)
+
+Examples:
+
+```bash
+# ASR from existing audio file
+lyricwave pipeline asr-file \
+  --audio /path/audio.wav \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice
+
+# capture system audio -> ASR -> translation (one-shot)
+lyricwave pipeline run-once \
+  --seconds 8 \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice \
+  --python-bin python \
+  --target-lang zh \
+  --translator-provider mock
+```
+
+### 4) Unified A/V Recording (Video Workflow)
+Use this when you need audio + visual together, while still allowing separated files per app.
+
+Common scenarios:
+- system-level A/V recording
+- selected app A/V recording
+- per-app split A/V outputs
+- then run ASR on produced audio files
+
+Examples:
+
+```bash
+# system audio + visual together
+lyricwave record system --audio-out system.wav --visual-out system.mp4 --seconds 10
+
+# selected app audio + visual together
+lyricwave record app --audio-out app.wav --visual-out app.mp4 --name "Google Chrome" --seconds 10
+
+# split mode: each app => one audio + one visual output
+lyricwave record apps-split --out-dir /tmp/compose-split --seconds 10 --all-active
+
+# then run ASR on a generated audio file
+lyricwave pipeline asr-file \
+  --audio /tmp/compose-split/Google_Chrome-12345.wav \
+  --asr-provider vibevoice \
+  --vibevoice-dir /absolute/path/to/VibeVoice
 ```
 
 ## CI And Release

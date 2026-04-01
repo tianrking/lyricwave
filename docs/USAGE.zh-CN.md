@@ -21,7 +21,14 @@ cargo build --workspace --release
 
 当前默认后端为 `cpal-native`。
 
-## 3. 信息探测命令
+## 3. 四大功能导航
+
+- 录制声音：第 5-7 节（`capture system/app/apps-split`）
+- 录制画面：第 11 节（`visual system/app/apps-list/apps-split`）
+- 声音转文字（ASR）：第 8 节（`pipeline asr-file`、`pipeline run-once`）
+- 大一统音画+ASR：第 12 节（`record system/app/apps-split`）+ 第 8 节
+
+## 4. 信息探测命令
 
 ```bash
 lyricwave backends list
@@ -32,7 +39,7 @@ lyricwave capture apps-list
 
 `capture apps-list` 用于列出当前活跃/可候选的应用进程。
 
-## 4. 系统混音录制
+## 5. 系统混音录制
 
 ### 4.1 定时录制
 
@@ -58,7 +65,7 @@ lyricwave capture system --out system.wav
 --stdout
 ```
 
-## 5. 按应用录制（混合输出）
+## 6. 按应用录制（混合输出）
 
 将一个或多个应用录到同一个 WAV 文件。
 
@@ -79,7 +86,7 @@ lyricwave capture app --out app.wav --pid 12345 --seconds 10
 --channels <N>
 ```
 
-## 6. 多应用拆分录制（独立文件）
+## 7. 多应用拆分录制（独立文件）
 
 把每个目标应用分别导出为独立 WAV 文件。
 
@@ -114,7 +121,7 @@ lyricwave capture apps-split \
 --channels <N>
 ```
 
-## 7. Pipeline 命令
+## 8. Pipeline 命令
 
 ### 7.1 一次性流水线（录音 -> ASR -> 翻译）
 
@@ -137,14 +144,14 @@ lyricwave pipeline asr-file \
   --vibevoice-dir /absolute/path/to/VibeVoice
 ```
 
-## 8. Daemon 命令
+## 9. Daemon 命令
 
 ```bash
 lyricwave daemon run --target-lang zh --interval-ms 500 --count 5
 lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 ```
 
-## 9. 平台说明
+## 10. 平台说明
 
 ### macOS
 - `capture app` / `apps-split` 需要“屏幕录制”权限。
@@ -158,7 +165,7 @@ lyricwave daemon serve --host 127.0.0.1 --port 7878 --target-lang zh
 - 按应用录制使用 WASAPI process loopback。
 - 目标进程必须在录制期间真实发声。
 
-## 10. Visual 命令
+## 11. Visual 命令
 
 ```bash
 lyricwave visual backends
@@ -172,7 +179,7 @@ lyricwave visual apps-split --out-dir /tmp/visual-split --seconds 10 --all-activ
 说明：
 - `visual app` / `visual apps-split` 依赖各平台原生“按进程画面路由”能力，部分平台当前可能返回 NotImplemented。
 
-## 11. 统一录制会话（音频 / 画面 / 音画联合）
+## 12. 统一录制会话（音频 / 画面 / 音画联合）
 
 通过分层命令执行系统级与应用级音画联合录制。
 
