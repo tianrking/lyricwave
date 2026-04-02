@@ -433,9 +433,9 @@ fn read_wav_meta(path: &Path) -> Result<(usize, u32, u16), AudioError> {
     Ok((samples, spec.sample_rate, spec.channels))
 }
 
-fn now_millis() -> u128 {
+fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis())
+        .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
 }
