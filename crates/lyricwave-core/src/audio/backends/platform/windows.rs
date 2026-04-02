@@ -465,10 +465,10 @@ fn write_wav_i16(
     Ok(())
 }
 
-fn now_millis() -> u128 {
+fn now_millis() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis())
+        .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
 }
